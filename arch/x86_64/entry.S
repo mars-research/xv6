@@ -1,6 +1,8 @@
 # Multiboot header, for multiboot boot loaders like GNU Grub.
 # http://www.gnu.org/software/grub/manual/multiboot/multiboot.html
 
+#include "asm.h"
+
 # Multiboot2 header -- must be 64-bit aligned
 .code32
 .align 8
@@ -17,24 +19,18 @@ multiboot_header:
   .long CHECKSUM
 # Address tag
 addr_tag:
-  .word 2                          /* type */
-  .word 0                          /* flags -- not optional */
-  .long (entry_addr_tag - addr_tag)/* size */
+  MBHEADER_TAG(2, 0, (entry_addr_tag - addr_tag))
   .long multiboot_load             /* header_addr */
   .long multiboot_load             /* load_addr */
   .long multiboot_load_end         /* load_end_addr */
   .long multiboot_bss_end          /* bss_end_addr */
 # Entry address tag
 entry_addr_tag:
-  .word 3                                 /* type */
-  .word 0                                 /* flags -- not optional */
-  .long (termination_tag - entry_addr_tag)/* size */
+  MBHEADER_TAG(3, 0, (termination_tag - entry_addr_tag))
   .long multiboot_entry
 # Tag to indicate end of tags
 termination_tag:
-  .word 0                             /* type */
-  .word 0                             /* flags -- not optional */
-  .long (header_end - termination_tag)/* size = 8 */
+  MBHEADER_TAG(0, 0, (header_end - termination_tag))
 header_end:
 
 # By convention, the _start symbol specifies the ELF entry point.

@@ -19,3 +19,9 @@
 #define STA_W     0x2       // Writeable (non-executable segments)
 #define STA_R     0x2       // Readable (executable segments)
 #define STA_A     0x1       // Accessed
+
+// assembler macro to create multiboot header tags
+#define MBHEADER_TAG(type, flags, size)  \
+	.word type;                      \
+	.word flags;                     \
+	.long size
