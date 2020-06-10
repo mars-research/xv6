@@ -1,4 +1,6 @@
-// should we use fixed width integers from stdint.h ?
+// Use fixed width integers from stdint.h, and more importantly,
+// uintptr_t which has the correct width depending on whether
+// we are compiling 32- or 64-bit code.
 #include "stdint.h"
 
 typedef unsigned int   uint;
