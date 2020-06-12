@@ -13,7 +13,7 @@
 // Multiboot header is reqd. to be in the first 32768 bytes.
 // We only check the first page since we're deliberately placing
 // the header right behind the ELF header.
-#define MBHEADER_LIMIT 0x1000
+#define MBHEADER_LIMIT 0x2000
 #define MBHEADER_MAGIC 0xE85250D6
 #define MBHEADER_TAG_ADDR 2
 #define MBHEADER_TAG_ENTRY_ADDR 3
