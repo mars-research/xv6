@@ -37,7 +37,24 @@
 #define CR0_CD          0x40000000      // Cache Disable
 #define CR0_PG          0x80000000      // Paging
 
-#define CR4_PSE         0x00000010      // Page size extension
+#define CR4_PSE         (1<<4)    // Page size extension
+#define CR4_PAE         (1<<5)    // Physical addr. extension
+
+// Register addr of IA32_EFER
+#define EFER        0xC0000080      // IA32 MSR
+// Flags in IA32_EFER
+#define EFER_SCE    (1<<0)          // IA32_EFER.SCE bit
+#define EFER_LME    (1<<8)          // IA32_EFER.LME bit
+#define EFER_NXE    (1<<11)         // IA32_EFER.NXE bit
+
+// Paging structure entry flags
+#define PSE_P       (1<<0)          // P;   1: present
+#define PSE_W       (1<<1)          // RW;  1: write enabled region
+#define PSE_U       (1<<2)          // U/S; 1: user access allowed
+#define PSE_PS      (1<<7)          // PS (page size)
+/* Disables instruction fetches from memory region mapped by this
+ * entry iff IA32_EFER.NXE == 1. MUST be 0 otherwise. */
+#define PSE_XD      (1<<63)         // XD;  1: execution disabled
 
 #define SEG_KCODE 1  // kernel code
 #define SEG_KDATA 2  // kernel data+stack
@@ -46,59 +63,84 @@
 #define SEG_UDATA 5  // user data+stack
 #define SEG_TSS   6  // this process's task state
 
+// Segment selectors (indexes) in our GDTs.
+// Defined by our convention, not the architecture.
+#define KCSEG32 (1<<3)  /* kernel 32-bit code segment */
+#define KCSEG   (2<<3)  /* kernel code segment */
+#define KDSEG   (3<<3)  /* kernel data segment */
+#define TSSSEG  (4<<3)  /* tss segment - takes two slots */
+#define UDSEG   (6<<3)  /* user data segment */
+#define UCSEG   (7<<3)  /* user code segment */
+
+// Number of segment descriptors in out bootstrap GDT
+#define NSEGS 8
+
+// Page table/directory entry flags.
+#define PTE_P           0x001   // Present
+#define PTE_W           0x002   // Writeable
+#define PTE_U           0x004   // User
+#define PTE_PWT         0x008   // Write-Through
+#define PTE_PCD         0x010   // Cache-Disable
+#define PTE_A           0x020   // Accessed
+#define PTE_D           0x040   // Dirty
+#define PTE_PS          0x080   // Page Size
+#define PTE_MBZ         0x180   // Bits must be zero
+
+// Page directory and page table constants.
+#define NPDENTRIES      512     // # directory entries per page directory
+#define NPTENTRIES      512     // # PTEs per page table
+#define PGSIZE          4096    // bytes mapped by a page
+
+#define PGSHIFT         12      // log2(PGSIZE)
+#define PTXSHIFT        12      // offset of PTX in a linear address
+#define PDXSHIFT        21      // offset of PDX in a linear address
+
+#define PXMASK          0x1FF
+
 //PAGEBREAK!
 #ifndef __ASSEMBLER__
+#include "types.h"
 // Segment Descriptor
 struct segdesc {
-  uint lim_15_0 : 16;  // Low bits of segment limit
-  uint base_15_0 : 16; // Low bits of segment base address
-  uint base_23_16 : 8; // Middle bits of segment base address
-  uint type : 4;       // Segment type (see STS_ constants)
-  uint s : 1;          // 0 = system, 1 = application
-  uint dpl : 2;        // Descriptor Privilege Level
-  uint p : 1;          // Present
-  uint lim_19_16 : 4;  // High bits of segment limit
-  uint avl : 1;        // Unused (available for software use)
-  uint rsv1 : 1;       // Reserved
-  uint db : 1;         // 0 = 16-bit segment, 1 = 32-bit segment
-  uint g : 1;          // Granularity: limit scaled by 4K when set
-  uint base_31_24 : 8; // High bits of segment base address
+	uint16 limit0;
+	uint16 base0;
+	uint8 base1;
+	uint8 bits;
+	uint8 bitslimit1;
+	uint8 base2;
 };
 
-// Normal segment
-#define SEG(type, base, lim, dpl) (struct segdesc)    \
-{ ((lim) >> 12) & 0xffff, (uint)(base) & 0xffff,      \
-  ((uintp)(base) >> 16) & 0xff, type, 1, dpl, 1,       \
-  (uintp)(lim) >> 28, 0, 0, 1, 1, (uintp)(base) >> 24 }
+// SEGDESC constructs a segment descriptor literal
+// with the given, base, limit, and type bits.
+#define SEGDESC(base, limit, bits) (struct segdesc){ \
+	(limit)&0xffff, (base)&0xffff, \
+	((base)>>16)&0xff, \
+	(bits)&0xff, \
+	(((bits)>>4)&0xf0) | ((limit>>16)&0xf), \
+	((base)>>24)&0xff, \
+}
 #define SEG16(type, base, lim, dpl) (struct segdesc)  \
 { (lim) & 0xffff, (uintp)(base) & 0xffff,              \
   ((uintp)(base) >> 16) & 0xff, type, 1, dpl, 1,       \
   (uintp)(lim) >> 16, 0, 0, 1, 0, (uintp)(base) >> 24 }
-#endif
 
 #define DPL_USER    0x3     // User DPL
 
-// Application segment type bits
-#define STA_X       0x8     // Executable segment
-#define STA_E       0x4     // Expand down (non-executable segments)
-#define STA_C       0x4     // Conforming code segment (executable only)
-#define STA_W       0x2     // Writeable (non-executable segments)
-#define STA_R       0x2     // Readable (executable segments)
-#define STA_A       0x1     // Accessed
+#define SEG_A      (1<<0)      /* segment accessed bit */
+#define SEG_R      (1<<1)      /* readable (code) */
+#define SEG_W      (1<<1)      /* writable (data) */
+#define SEG_C      (1<<2)      /* conforming segment (code) */
+#define SEG_E      (1<<2)      /* expand-down bit (data) */
+#define SEG_CODE   (1<<3)      /* code segment (instead of data) */
 
-// System segment type bits
-#define STS_T16A    0x1     // Available 16-bit TSS
-#define STS_LDT     0x2     // Local Descriptor Table
-#define STS_T16B    0x3     // Busy 16-bit TSS
-#define STS_CG16    0x4     // 16-bit Call Gate
-#define STS_TG      0x5     // Task Gate / Coum Transmitions
-#define STS_IG16    0x6     // 16-bit Interrupt Gate
-#define STS_TG16    0x7     // 16-bit Trap Gate
-#define STS_T32A    0x9     // Available 32-bit TSS
-#define STS_T32B    0xB     // Busy 32-bit TSS
-#define STS_CG32    0xC     // 32-bit Call Gate
-#define STS_IG32    0xE     // 32-bit Interrupt Gate
-#define STS_TG32    0xF     // 32-bit Trap Gate
+// User and system segment bits.
+#define SEG_S      (1<<4)      /* if 0, system descriptor */
+#define SEG_DPL(x) ((x)<<5)    /* descriptor privilege level (2 bits) */
+#define SEG_P      (1<<7)      /* segment present */
+#define SEG_AVL    (1<<8)      /* available for operating system use */
+#define SEG_L      (1<<9)      /* long mode */
+#define SEG_D      (1<<10)     /* default operation size 32-bit */
+#define SEG_G      (1<<11)     /* granularity */
 
 // A virtual address 'la' has a three-part structure as follows:
 //
@@ -117,48 +159,13 @@ struct segdesc {
 // construct virtual address from indexes and offset
 #define PGADDR(d, t, o) ((uintp)((d) << PDXSHIFT | (t) << PTXSHIFT | (o)))
 
-// Page directory and page table constants.
-#if X64
-#define NPDENTRIES      512     // # directory entries per page directory
-#define NPTENTRIES      512     // # PTEs per page table
-#define PGSIZE          4096    // bytes mapped by a page
-
-#define PGSHIFT         12      // log2(PGSIZE)
-#define PTXSHIFT        12      // offset of PTX in a linear address
-#define PDXSHIFT        21      // offset of PDX in a linear address
-
-#define PXMASK          0x1FF
-#else
-#define NPDENTRIES      1024    // # directory entries per page directory
-#define NPTENTRIES      1024    // # PTEs per page table
-#define PGSIZE          4096    // bytes mapped by a page
-
-#define PGSHIFT         12      // log2(PGSIZE)
-#define PTXSHIFT        12      // offset of PTX in a linear address
-#define PDXSHIFT        22      // offset of PDX in a linear address
-
-#define PXMASK          0x3FF
-#endif
-
 #define PGROUNDUP(sz)  (((sz)+((uintp)PGSIZE-1)) & ~((uintp)(PGSIZE-1)))
 #define PGROUNDDOWN(a) (((a)) & ~((uintp)(PGSIZE-1)))
-
-// Page table/directory entry flags.
-#define PTE_P           0x001   // Present
-#define PTE_W           0x002   // Writeable
-#define PTE_U           0x004   // User
-#define PTE_PWT         0x008   // Write-Through
-#define PTE_PCD         0x010   // Cache-Disable
-#define PTE_A           0x020   // Accessed
-#define PTE_D           0x040   // Dirty
-#define PTE_PS          0x080   // Page Size
-#define PTE_MBZ         0x180   // Bits must be zero
 
 // Address in page table or page directory entry
 #define PTE_ADDR(pte)   ((uintp)(pte) & ~0xFFF)
 #define PTE_FLAGS(pte)  ((uintp)(pte) &  0xFFF)
 
-#ifndef __ASSEMBLER__
 typedef uintp pte_t;
 
 // Task state segment format
