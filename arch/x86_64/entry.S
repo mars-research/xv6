@@ -56,18 +56,27 @@ entry:
 # setup bootstrap GDT
   call  loadgdt
 # load 32-bit code segment
-  ljmp $KCSEG32, $V2P_WO(start32)
+  ljmp  $KCSEG32, $V2P_WO(start32)
 
 start32:
 # setup paging
-  call initpagetables
-  call enablepaging
+  call  initpagetables
+  call  enablepaging
+
+# prepare for jump to 64-bit execution
+  mov   $V2P_WO(start64), %eax
+  ljmp  $KCSEG, $V2P_WO(tramp64) // load 64-bit code segment desc.
+
+.code64
+start64:
+
 
 spin:
   jmp   spin
 
 # Helper procedures/functions
 
+.code32
 # Page tables.  See section 4.5 of 253668.pdf.
 # We map the first GB of physical memory at 0 and at 1 TB (not GB) before
 # the end of virtual memory.  At boot time we are using the mapping at 0
@@ -163,15 +172,21 @@ loadgdt:
   add   $8, %esp
 
 # load all segment registers except CS
-  mov   $KDSEG, %eax // data segment selector
-  mov   %eax, %ds
-  mov   %eax, %es
-  mov   %eax, %ss
-  xor   %eax, %eax // null segment selector
-  mov   %eax, %fs
-  mov   %eax, %gs
+  mov   $KDSEG, %eax # data segment selector
+  mov   %eax,   %ds
+  mov   %eax,   %es
+  mov   %eax,   %ss
+  xor   %eax,   %eax # null segment selector
+  mov   %eax,   %fs
+  mov   %eax,   %gs
 
   ret
+
+.code64
+tramp64:
+  mov   $KERNBASE,  %r11
+  add   %r11,   %rax     # must contain physical addr of start64
+  jmp   *%rax
 
 # data section
 .section .bss

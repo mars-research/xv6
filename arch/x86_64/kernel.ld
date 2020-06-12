@@ -8,7 +8,7 @@ multiboot_load = 0x100000; /* 1MiB */
 SECTIONS {
 	/* Link kernel at 1Mib offset in the last TB
    * of virtual address space. */
-	. = 0xFFFFFF0000100000; /* 2GiB + 1MiB */
+	. = 0xFFFFFF0000100000; /* should match KERNBASE */
 
 	/* load sections physically starting at 1Mib */
 	.text : AT(multiboot_load) {

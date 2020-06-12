@@ -75,6 +75,6 @@ $(IMG): $(KERNEL) bootblock $(OBJS)
 	dd if=$(KERNEL) of=xv6.img seek=1 conv=notrunc
 
 clean:
-	rm $(KERNEL) *.o *.d bootblock || true
+	rm $(KERNEL) *.o *.d *.asm bootblock || true
 
 .PHONY: clean, all
