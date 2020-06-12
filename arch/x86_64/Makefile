@@ -1,7 +1,9 @@
-# Temporaty Makefile to be used for initial testing
+# Temporary Makefile to be used for initial testing
 
 KERNEL = kernel
 IMG = xv6.img
+OBJS = \
+       setup.o \
 
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
@@ -11,7 +13,7 @@ OBJDUMP = $(TOOLPREFIX)objdump
 
 CFLAGS = -Wall -Werror -fno-omit-frame-pointer -ggdb -c
 CFLAGS += -O3
-CFLAGS += -MD
+# CFLAGS += -MD
 # CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-common -nostdlib
 CFLAGS += -I.
@@ -63,9 +65,9 @@ bootblock: bootasm.S bootmain.c
 	$(OBJCOPY) -j .text -O binary bootblock.o bootblock
 	./sign.pl bootblock
 
-$(KERNEL): entry.S kernel.ld
+$(KERNEL): entry.S kernel.ld $(OBJS)
 	$(CC) -c -o entry.o $<
-	$(LD) $(LDFLAGS) -m elf_x86_64 -N -T kernel.ld -o $@ entry.o
+	$(LD) $(LDFLAGS) -m elf_x86_64 -N -T kernel.ld -o $@ entry.o $(OBJS)
 
 $(IMG): $(KERNEL) bootblock $(OBJS)
 	dd if=/dev/zero of=xv6.img count=10000
@@ -73,6 +75,6 @@ $(IMG): $(KERNEL) bootblock $(OBJS)
 	dd if=$(KERNEL) of=xv6.img seek=1 conv=notrunc
 
 clean:
-	rm $(KERNEL) *.o bootblock || true
+	rm $(KERNEL) *.o *.d bootblock || true
 
 .PHONY: clean, all
