@@ -53,26 +53,30 @@ _start = V2P_WO(entry)
 entry:
 # setup stack
   mov   $V2P_WO(stacktop), %esp
+
 # setup bootstrap GDT
   call  loadgdt
-# load 32-bit code segment
-  ljmp  $KCSEG32, $V2P_WO(start32)
 
-start32:
 # setup paging
   call  initpagetables
   call  enablepaging
 
-# prepare for jump to 64-bit execution
-  mov   $V2P_WO(start64), %eax
-  ljmp  $KCSEG, $V2P_WO(tramp64) // load 64-bit code segment desc.
+# enable 64-bit execution
+  ljmp  $KCSEG, $V2P_WO(start64)
 
 .code64
 start64:
+# jump to high address space in 64-bit mode
+  call  highjump    # ;)
+# load VA of stack
+  movabsq $(stacktop),  %rsp
+# clear frame pointer for stack walks
+  xor   %rbp, %rbp
+# boot into C
+# call  main
 
-
-spin:
-  jmp   spin
+# should not return
+  jmp   .
 
 # Helper procedures/functions
 
@@ -180,13 +184,22 @@ loadgdt:
   mov   %eax,   %fs
   mov   %eax,   %gs
 
+# load new CS register
+  ljmp  $KCSEG32, $V2P_WO(loadgdt32)
+
+loadgdt32:
   ret
 
 .code64
-tramp64:
-  mov   $KERNBASE,  %r11
-  add   %r11,   %rax     # must contain physical addr of start64
+highjump:
+# execute indirect jump into high address space
+  mov   $KERNBASE,  %rax
+  add   $V2P_WO(highaddr), %rax
+  add   %r11,   %rax
   jmp   *%rax
+
+highaddr:
+  ret
 
 # data section
 .section .bss
