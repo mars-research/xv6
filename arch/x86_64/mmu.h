@@ -99,7 +99,8 @@
 
 //PAGEBREAK!
 #ifndef __ASSEMBLER__
-#include "types.h"
+#include "../../kernel/types.h"
+
 // Segment Descriptor
 struct segdesc {
 	uint16 limit0;
