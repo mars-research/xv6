@@ -1,11 +1,11 @@
 // The local APIC manages internal (non-I/O) interrupts.
 // See Chapter 8 & Appendix C of Intel processor manual volume 3.
 
-#include "../../kernel/param.h"
-#include "../../kernel/types.h"
-#include "../../kernel/date.h"
+#include "../../param.h"
+#include "../../types.h"
+#include "../../date.h"
 #include "defs.h"
-#include "../../kernel/defs.h"
+#include "../../defs.h"
 #include "memlayout.h"
 #include "traps.h"
 #include "mmu.h"

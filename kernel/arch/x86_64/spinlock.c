@@ -4,16 +4,16 @@ struct cpu* mycpu(void);
 
 // Mutual exclusion spin locks.
 
-#include "../../kernel/types.h"
-#include "../../kernel/param.h"
-#include "../../kernel/date.h"
+#include "../../types.h"
+#include "../../param.h"
+#include "../../date.h"
 #include "memlayout.h"
 #include "mmu.h"
-#include "../../kernel/spinlock.h"
+#include "../../spinlock.h"
 #include "x86_64.h"
 #include "defs.h"
 #include "proc.h"
-#include "../../kernel/defs.h"
+#include "../../defs.h"
 
 void
 initlock(struct spinlock *lk, char *name)

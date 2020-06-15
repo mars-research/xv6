@@ -5,7 +5,7 @@
 // bootmain() loads a multiboot2 kernel image from the disk starting at
 // sector 1 and then jumps to the kernel entry routine.
 
-#include "../../kernel/types.h"
+#include "../../types.h"
 #include "x86_64.h"
 
 #define SECTSIZE  512

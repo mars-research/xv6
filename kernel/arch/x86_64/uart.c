@@ -1,9 +1,9 @@
 // Intel 8250 serial port (UART).
 
-#include "../../kernel/types.h"
-#include "../../kernel/date.h"
+#include "../../types.h"
+#include "../../date.h"
 #include "defs.h"
-#include "../../kernel/defs.h"
+#include "../../defs.h"
 #include "mmu.h"
 #include "x86_64.h"
 

@@ -7,12 +7,12 @@ OBJS = \
   $K/string.o \
   $K/console.o \
   $K/main.o \
-  arch/$(ARCH)/entry.o \
-  arch/$(ARCH)/setup.o \
-  arch/$(ARCH)/lapic.o \
-  arch/$(ARCH)/uart.o \
-  arch/$(ARCH)/spinlock.o \
-  arch/$(ARCH)/proc.o \
+  $K/arch/$(ARCH)/entry.o \
+  $K/arch/$(ARCH)/setup.o \
+  $K/arch/$(ARCH)/lapic.o \
+  $K/arch/$(ARCH)/uart.o \
+  $K/arch/$(ARCH)/spinlock.o \
+  $K/arch/$(ARCH)/proc.o \
 
 QEMU = qemu-system-x86_64
 
@@ -40,7 +40,7 @@ endif
 LDFLAGS = -z max-page-size=4096
 
 $K/kernel: $(OBJS) $K/kernel.ld # $U/initcode
-	$(LD) $(LDFLAGS) -T arch/$(ARCH)/kernel.ld -o $K/kernel $(OBJS) 
+	$(LD) $(LDFLAGS) -T $K/arch/$(ARCH)/kernel.ld -o $K/kernel $(OBJS) 
 	$(OBJDUMP) -S $K/kernel > $K/kernel.asm
 	$(OBJDUMP) -t $K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $K/kernel.sym
 
@@ -103,13 +103,13 @@ fs.img: mkfs/mkfs README $(UPROGS)
 
 -include kernel/*.d user/*.d
 
-$K/bootblock: arch/$(ARCH)/bootasm.S arch/$(ARCH)/bootmain.c
-	$(CC) -m32 -c arch/$(ARCH)/bootasm.S -o arch/$(ARCH)/bootasm.o
-	$(CC) -fno-builtin -fno-pic -m32 -c -O arch/$(ARCH)/bootmain.c -o arch/$(ARCH)/bootmain.o
-	$(LD) $(LDFLAGS) -m elf_i386 -N -estart -Ttext 0x7C00 -o $K/bootblock.o arch/$(ARCH)/bootasm.o arch/$(ARCH)/bootmain.o
+$K/bootblock: $K/arch/$(ARCH)/bootasm.S $K/arch/$(ARCH)/bootmain.c
+	$(CC) -m32 -c $K/arch/$(ARCH)/bootasm.S -o $K/arch/$(ARCH)/bootasm.o
+	$(CC) -fno-builtin -fno-pic -m32 -c -O $K/arch/$(ARCH)/bootmain.c -o $K/arch/$(ARCH)/bootmain.o
+	$(LD) $(LDFLAGS) -m elf_i386 -N -estart -Ttext 0x7C00 -o $K/bootblock.o $K/arch/$(ARCH)/bootasm.o $K/arch/$(ARCH)/bootmain.o
 	$(OBJDUMP) -S $K/bootblock.o > $K/bootblock.asm
 	$(OBJCOPY) -j .text -O binary $K/bootblock.o $K/bootblock
-	arch/$(ARCH)/sign.pl $K/bootblock
+	$K/arch/$(ARCH)/sign.pl $K/bootblock
 
 xv6.img: $K/kernel $K/bootblock
 	dd if=/dev/zero of=xv6.img count=10000
@@ -124,7 +124,7 @@ clean:
         $U/usys.S \
 	$(UPROGS) \
 	xv6.img serial.log \
-	*/*/*.o */*/*.d
+	*/*/*.o */*/*.d \
 	$K/bootblock
 
 # try to generate a unique GDB port
@@ -143,13 +143,13 @@ QEMUOPTS = -drive file=xv6.img,format=raw -m 3G -smp $(CPUS) -curses # -nographi
 QEMUOPTS += -serial file:serial.log
 # QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-qemu: $K/kernel # fs.img
+qemu: xv6.img # fs.img
 	$(QEMU) $(QEMUOPTS)
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-qemu-gdb: $K/kernel # .gdbinit fs.img
+qemu-gdb: xv6.img # .gdbinit fs.img
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 

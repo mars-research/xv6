@@ -99,7 +99,7 @@
 
 //PAGEBREAK!
 #ifndef __ASSEMBLER__
-#include "../../kernel/types.h"
+#include "../../types.h"
 
 // Segment Descriptor
 struct segdesc {
