@@ -30,3 +30,7 @@ void            acquire(struct spinlock*);
 int             holding(struct spinlock*);
 void            initlock(struct spinlock*, char*);
 void            release(struct spinlock*);
+
+// arch/$ARCH/proc64.h
+int             cpuid(void);
+struct cpu*     mycpu(void);

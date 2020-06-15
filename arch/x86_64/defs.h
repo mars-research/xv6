@@ -1,6 +1,5 @@
 // Definitions of functions specific to x86_64
 struct rtcdata;
-struct spinlock;
 
 // lapic.c
 void            cmostime(struct rtcdate *r);
