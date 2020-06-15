@@ -4,6 +4,10 @@ KERNEL = kernel
 IMG = xv6.img
 OBJS = \
        setup.o \
+       lapic.o \
+       proc64.o \
+       spinlock.o \
+       uart.o \
 
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
@@ -14,7 +18,7 @@ OBJDUMP = $(TOOLPREFIX)objdump
 CFLAGS = -Wall -Werror -fno-omit-frame-pointer -ggdb -c
 CFLAGS += -O3
 # CFLAGS += -MD
-# CFLAGS += -mcmodel=medany
+CFLAGS += -mcmodel=large
 CFLAGS += -ffreestanding -fno-common -nostdlib
 CFLAGS += -I.
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
@@ -46,7 +50,7 @@ endif
 
 all: $(IMG)
 
-QEMUOPTS = -drive file=xv6.img,format=raw -m 512
+QEMUOPTS = -drive file=xv6.img,format=raw -m 512 -serial file:serial.log
 QEMUOPTS += -curses
 QEMUGDB = -S -s
 
@@ -69,7 +73,7 @@ $(KERNEL): entry.S kernel.ld $(OBJS)
 	$(CC) -c -o entry.o $<
 	$(LD) $(LDFLAGS) -m elf_x86_64 -N -T kernel.ld -o $@ entry.o $(OBJS)
 
-$(IMG): $(KERNEL) bootblock $(OBJS)
+$(IMG): $(KERNEL) bootblock
 	dd if=/dev/zero of=xv6.img count=10000
 	dd if=bootblock of=xv6.img conv=notrunc
 	dd if=$(KERNEL) of=xv6.img seek=1 conv=notrunc

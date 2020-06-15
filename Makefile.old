@@ -1,20 +1,52 @@
 K=kernel
 U=user
-ARCH=x86_64
 
 OBJS = \
+  $K/entry.o \
+  $K/start.o \
+  $K/console.o \
   $K/printf.o \
+  $K/uart.o \
+  $K/kalloc.o \
+  $K/spinlock.o \
   $K/string.o \
-  $K/console64.o \
-  $K/main64.o \
-  arch/$(ARCH)/entry.o \
-  arch/$(ARCH)/setup.o \
-  arch/$(ARCH)/lapic.o \
-  arch/$(ARCH)/uart.o \
-  arch/$(ARCH)/spinlock.o \
-  arch/$(ARCH)/proc64.o \
+  $K/main.o \
+  $K/vm.o \
+  $K/proc.o \
+  $K/swtch.o \
+  $K/trampoline.o \
+  $K/trap.o \
+  $K/syscall.o \
+  $K/sysproc.o \
+  $K/bio.o \
+  $K/fs.o \
+  $K/log.o \
+  $K/sleeplock.o \
+  $K/file.o \
+  $K/pipe.o \
+  $K/exec.o \
+  $K/sysfile.o \
+  $K/kernelvec.o \
+  $K/plic.o \
+  $K/virtio_disk.o
 
-QEMU = qemu-system-x86_64
+# riscv64-unknown-elf- or riscv64-linux-gnu-
+# perhaps in /opt/riscv/bin
+#TOOLPREFIX = 
+
+# Try to infer the correct TOOLPREFIX if not set
+ifndef TOOLPREFIX
+TOOLPREFIX := $(shell if riscv64-unknown-elf-objdump -i 2>&1 | grep 'elf64-big' >/dev/null 2>&1; \
+	then echo 'riscv64-unknown-elf-'; \
+	elif riscv64-linux-gnu-objdump -i 2>&1 | grep 'elf64-big' >/dev/null 2>&1; \
+	then echo 'riscv64-linux-gnu-'; \
+	else echo "***" 1>&2; \
+	echo "*** Error: Couldn't find an riscv64 version of GCC/binutils." 1>&2; \
+	echo "*** To turn off this error, run 'gmake TOOLPREFIX= ...'." 1>&2; \
+	echo "***" 1>&2; exit 1; fi)
+endif
+
+QEMU = qemu-system-riscv64
 
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
@@ -24,8 +56,8 @@ OBJDUMP = $(TOOLPREFIX)objdump
 
 CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb
 CFLAGS += -MD
-CFLAGS += -mcmodel=large
-CFLAGS += -ffreestanding -fno-common -nostdlib
+CFLAGS += -mcmodel=medany
+CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
 CFLAGS += -I.
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 
@@ -39,8 +71,8 @@ endif
 
 LDFLAGS = -z max-page-size=4096
 
-$K/kernel: $(OBJS) $K/kernel.ld # $U/initcode
-	$(LD) $(LDFLAGS) -T arch/$(ARCH)/kernel.ld -o $K/kernel $(OBJS) 
+$K/kernel: $(OBJS) $K/kernel.ld $U/initcode
+	$(LD) $(LDFLAGS) -T $K/kernel.ld -o $K/kernel $(OBJS) 
 	$(OBJDUMP) -S $K/kernel > $K/kernel.asm
 	$(OBJDUMP) -t $K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $K/kernel.sym
 
@@ -103,51 +135,35 @@ fs.img: mkfs/mkfs README $(UPROGS)
 
 -include kernel/*.d user/*.d
 
-$K/bootblock: arch/$(ARCH)/bootasm.S arch/$(ARCH)/bootmain.c
-	$(CC) -m32 -c arch/$(ARCH)/bootasm.S -o arch/$(ARCH)/bootasm.o
-	$(CC) -fno-builtin -fno-pic -m32 -c -O arch/$(ARCH)/bootmain.c -o arch/$(ARCH)/bootmain.o
-	$(LD) $(LDFLAGS) -m elf_i386 -N -estart -Ttext 0x7C00 -o $K/bootblock.o arch/$(ARCH)/bootasm.o arch/$(ARCH)/bootmain.o
-	$(OBJDUMP) -S $K/bootblock.o > $K/bootblock.asm
-	$(OBJCOPY) -j .text -O binary $K/bootblock.o $K/bootblock
-	arch/$(ARCH)/sign.pl $K/bootblock
-
-xv6.img: $K/kernel $K/bootblock
-	dd if=/dev/zero of=xv6.img count=10000
-	dd if=$K/bootblock of=xv6.img conv=notrunc
-	dd if=$< of=xv6.img seek=1 conv=notrunc
-
 clean: 
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*/*.o */*.d */*.asm */*.sym \
 	$U/initcode $U/initcode.out $K/kernel fs.img \
 	mkfs/mkfs .gdbinit \
         $U/usys.S \
-	$(UPROGS) \
-	xv6.img serial.log
+	$(UPROGS)
 
 # try to generate a unique GDB port
-# GDBPORT = $(shell expr `id -u` % 5000 + 25000)
+GDBPORT = $(shell expr `id -u` % 5000 + 25000)
 # QEMU's gdb stub command line changed in 0.11
-# QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
-#	then echo "-gdb tcp::$(GDBPORT)"; \
-#	else echo "-s -p $(GDBPORT)"; fi)
+QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
+	then echo "-gdb tcp::$(GDBPORT)"; \
+	else echo "-s -p $(GDBPORT)"; fi)
 ifndef CPUS
-CPUS := 1
+CPUS := 3
 endif
 
-QEMUGDB = -S -s
 QEMUEXTRA = -drive file=fs1.img,if=none,format=raw,id=x1 -device virtio-blk-device,drive=x1,bus=virtio-mmio-bus.1
-QEMUOPTS = -drive file=xv6.img,format=raw -m 3G -smp $(CPUS) -curses # -nographic
-QEMUOPTS += -serial file:serial.log
-# QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+QEMUOPTS = -machine virt -bios none -kernel $K/kernel -m 3G -smp $(CPUS) -nographic
+QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-qemu: $K/kernel # fs.img
+qemu: $K/kernel fs.img
 	$(QEMU) $(QEMUOPTS)
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-qemu-gdb: $K/kernel # .gdbinit fs.img
+qemu-gdb: $K/kernel .gdbinit fs.img
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
