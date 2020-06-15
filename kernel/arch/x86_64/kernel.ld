@@ -3,12 +3,13 @@
 /* OUTPUT_ARCH(x86_64) */
 ENTRY(_start)
 
-multiboot_load = 0x100000; /* 1MiB */
+kernelbase = 0x80000000; /* 2GiB */
+multiboot_load = kernelbase;
 
 SECTIONS {
 	/* Link kernel at 1Mib offset in the last TB
    * of virtual address space. */
-	. = 0xFFFFFF0000100000; /* should match KERNBASE */
+	. = kernelbase; /* 2GiB -- should match KERNBASE */
 
 	/* load sections physically starting at 1Mib */
 	.text : AT(multiboot_load) {

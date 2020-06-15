@@ -124,7 +124,7 @@ clean:
         $U/usys.S \
 	$(UPROGS) \
 	xv6.img serial.log \
-	*/*/*.o */*/*.d \
+	*/*/*/*.o */*/*/*.d \
 	$K/bootblock
 
 # try to generate a unique GDB port

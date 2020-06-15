@@ -45,14 +45,14 @@ header_end:
 # Since we haven't set up virtual memory yet, our entry point is
 # the physical address of 'entry'.
 .globl _start
-_start = V2P_WO(entry)
+_start = entry
 
 # Entering xv6 on boot processor, with paging off.
 #define STACKSIZE 2*PGSIZE
 .globl entry
 entry:
 # setup stack
-  mov   $V2P_WO(stacktop), %esp
+  mov   $stacktop, %esp
 
 # setup bootstrap GDT
   call  loadgdt
@@ -62,15 +62,10 @@ entry:
   call  enablepaging
 
 # enable 64-bit execution
-  ljmp  $KCSEG, $V2P_WO(start64)
+  ljmp  $KCSEG, $start64
+
 .code64
 start64:
-
-# jump to high address space in 64-bit mode
-  movabsq $(highaddr),  %rax
-  jmp   *%rax
-highaddr:
-
 # load VA of stack
   movabsq $(stacktop),  %rsp
 # clear frame pointer for stack walks
@@ -99,13 +94,13 @@ initpagetables:
 # Base addr:   Table
 # 0x1000: PML4
 # 0x2000: PDPT
-# 0x3000: PD0 -> 0 - 1 GiB     (Physical)
+# 0x3000: PD   -> 2 - 2 GiB + 128 MiB (64 entries)
 
 #define PML4 0x1000
 #define PDPT 0x2000
 #define PD   0x3000
 
-# reset 0x1000 - 0x6000 to 0
+# reset 0x1000 - 0x4000 to 0
   xor   %eax,   %eax
   mov   $(PD + PGSIZE - PML4), %ecx # number of bytes to zero out
   shr   $2,     %ecx                # 4 bytes written at a time
@@ -115,33 +110,31 @@ initpagetables:
 # Setup PD
   mov   $PD,    %ebx
   xor   %ecx,   %ecx                 # counter
-  mov   $(2<<20), %edx               # 2 MiB; to calculate page base addrs
-  mov   $(PSE_P|PSE_W|PSE_PS),  %eax
+  mov   $(2<<20),   %edx             # 2 MiB; to calculate page base addrs
+  mov   $KERNBASE,  %eax
+  or    $(PSE_P|PSE_W|PSE_PS),  %eax
 PDE_loop:
   mov   %eax,   (%ebx, %ecx, 8)      # PD[ECX] = EAX
   add   %edx,   %eax                 # create next PD entry
   inc   %ecx
-  cmp   $512,   %ecx                 # 512 entries in a 4K table
+  cmp   $64,    %ecx                 # 64 entries to map 128 MiB
   jnz   PDE_loop
 
 # Setup PDPT
   mov   $PDPT,  %ebx
   mov   $PD,   %eax
   or    $(PTE_P|PTE_W), %eax
-# PDPT[0] -> PD
-  xor   %edi,   %edi
+# PDPT[2] -> PD -- 2 GiB - 3 GiB entry
+  mov   $2,   %edi
   mov   %eax,   (%ebx, %edi, 8)      # PDPT[0] = ADDR(PD)
 
 # Setup PML4
   mov   $PML4,  %ebx
   mov   $PDPT,  %eax
   or    $(PTE_P|PTE_W), %eax
-# PML4[0] -> PDPT -- low mapping
+# PML4[0] -> PDPT
   xor   %edi,   %edi
   mov   %eax,   (%ebx, %edi, 8)      # PML4[0] = ADDR(PDPT)
-# PML4[510] -> PDPT -- high mapping
-  mov   $510,   %edi
-  mov   %eax,   (%ebx, %edi, 8)      # PML4[510] = ADDR(PDPT)
 
   ret
 
@@ -172,7 +165,7 @@ loadgdt:
 # setup gdt descriptor on stack
   sub   $8, %esp
   movl  $(8 * NSEGS - 1), 0(%esp)
-  movl  $V2P_WO(bootgdt), 2(%esp)
+  movl  $bootgdt, 2(%esp)
   lgdt  0(%esp)
 
 # reclaim stack space
@@ -188,7 +181,7 @@ loadgdt:
   mov   %eax,   %gs
 
 # load new CS register
-  ljmp  $KCSEG32, $V2P_WO(loadgdt32)
+  ljmp  $KCSEG32, $loadgdt32
 
 loadgdt32:
   ret
