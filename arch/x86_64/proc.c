@@ -1,12 +1,12 @@
 #include "../../kernel/types.h"
 #include "../../kernel/param.h"
 #include "../../kernel/spinlock.h"
-#include "../../kernel/defs64.h"
+#include "../../kernel/defs.h"
 #include "../../kernel/date.h"
 #include "defs.h"
 #include "x86_64.h"
 #include "mmu.h"
-#include "proc64.h"
+#include "proc.h"
 
 struct cpu cpus[NCPU];
 

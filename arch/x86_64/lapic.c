@@ -5,7 +5,7 @@
 #include "../../kernel/types.h"
 #include "../../kernel/date.h"
 #include "defs.h"
-#include "../../kernel/defs64.h"
+#include "../../kernel/defs.h"
 #include "memlayout.h"
 #include "traps.h"
 #include "mmu.h"

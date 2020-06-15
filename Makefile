@@ -5,14 +5,14 @@ ARCH=x86_64
 OBJS = \
   $K/printf.o \
   $K/string.o \
-  $K/console64.o \
-  $K/main64.o \
+  $K/console.o \
+  $K/main.o \
   arch/$(ARCH)/entry.o \
   arch/$(ARCH)/setup.o \
   arch/$(ARCH)/lapic.o \
   arch/$(ARCH)/uart.o \
   arch/$(ARCH)/spinlock.o \
-  arch/$(ARCH)/proc64.o \
+  arch/$(ARCH)/proc.o \
 
 QEMU = qemu-system-x86_64
 
@@ -123,7 +123,9 @@ clean:
 	mkfs/mkfs .gdbinit \
         $U/usys.S \
 	$(UPROGS) \
-	xv6.img serial.log
+	xv6.img serial.log \
+	*/*/*.o */*/*.d
+	$K/bootblock
 
 # try to generate a unique GDB port
 # GDBPORT = $(shell expr `id -u` % 5000 + 25000)

@@ -3,7 +3,7 @@
 #include "../../kernel/types.h"
 #include "../../kernel/date.h"
 #include "defs.h"
-#include "../../kernel/defs64.h"
+#include "../../kernel/defs.h"
 #include "mmu.h"
 #include "x86_64.h"
 

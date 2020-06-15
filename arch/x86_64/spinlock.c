@@ -12,8 +12,8 @@ struct cpu* mycpu(void);
 #include "../../kernel/spinlock.h"
 #include "x86_64.h"
 #include "defs.h"
-#include "proc64.h"
-#include "../../kernel/defs64.h"
+#include "proc.h"
+#include "../../kernel/defs.h"
 
 void
 initlock(struct spinlock *lk, char *name)
