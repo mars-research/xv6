@@ -7,7 +7,7 @@ struct cpu* mycpu(void);
 #include "../../types.h"
 #include "../../param.h"
 #include "../../date.h"
-#include "memlayout.h"
+#include "../../memlayout.h"
 #include "mmu.h"
 #include "../../spinlock.h"
 #include "x86_64.h"

@@ -7,6 +7,7 @@ OBJS = \
   $K/string.o \
   $K/console.o \
   $K/main.o \
+	$K/kalloc.o \
   $K/arch/$(ARCH)/entry.o \
   $K/arch/$(ARCH)/setup.o \
   $K/arch/$(ARCH)/lapic.o \

@@ -4,6 +4,7 @@
 #include "defs.h"
 
 volatile static int started = 0;
+extern uint64 end[];
 
 // start() jumps here in supervisor mode on all CPUs.
 void
@@ -15,6 +16,7 @@ main()
     printf("\n");
     printf("xv6 is booting\n");
     printf("\n");
+    kinit();
     while (1);
   }
 }

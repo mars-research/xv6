@@ -2,8 +2,8 @@
 # http://www.gnu.org/software/grub/manual/multiboot/multiboot.html
 
 #include "asm.h"
-#include "memlayout.h"
 #include "mmu.h"
+#include "../../memlayout.h"
 
 # Multiboot2 header -- must be 64-bit aligned
 .set MAGIC, 0xE85250D6

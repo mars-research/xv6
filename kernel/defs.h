@@ -28,6 +28,12 @@ void            printfinit(void);
 // console.c
 void            consputc(int);
 
+// kalloc.c
+void            kinit(void);
+void            freerange(void*, void*);
+void            kfree(void*);
+void*           kalloc(void);
+
 // arch/$ARCH/spinlock.c
 void            acquire(struct spinlock*);
 int             holding(struct spinlock*);

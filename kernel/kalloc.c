@@ -4,12 +4,9 @@
 
 #include "types.h"
 #include "param.h"
-#include "memlayout.h"
 #include "spinlock.h"
-#include "riscv.h"
 #include "defs.h"
-
-void freerange(void *pa_start, void *pa_end);
+#include "memlayout.h"
 
 extern char end[]; // first address after kernel.
                    // defined by kernel.ld.
@@ -30,6 +27,7 @@ kinit()
   freerange(end, (void*)PHYSTOP);
 }
 
+// TODO: should this be static?
 void
 freerange(void *pa_start, void *pa_end)
 {

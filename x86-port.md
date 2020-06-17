@@ -28,5 +28,14 @@ Boot
 -- Maybe we can support GRUB as well
 
 
+Things of note
+--------------
+
+-- Boot loader is currently placed in kernel/arch/x86_64/; assuming it cannot
+   be architecture independent.
+
+-- Leave architecture independent definitions in kernel/ and move all
+   architecture dependent implementations to kernel/arch/x86_64
+
 
 

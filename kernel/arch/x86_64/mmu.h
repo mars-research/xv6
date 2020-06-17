@@ -89,7 +89,6 @@
 // Page directory and page table constants.
 #define NPDENTRIES      512     // # directory entries per page directory
 #define NPTENTRIES      512     // # PTEs per page table
-#define PGSIZE          4096    // bytes mapped by a page
 
 #define PGSHIFT         12      // log2(PGSIZE)
 #define PTXSHIFT        12      // offset of PTX in a linear address
@@ -159,9 +158,6 @@ struct segdesc {
 
 // construct virtual address from indexes and offset
 #define PGADDR(d, t, o) ((uintp)((d) << PDXSHIFT | (t) << PTXSHIFT | (o)))
-
-#define PGROUNDUP(sz)  (((sz)+((uintp)PGSIZE-1)) & ~((uintp)(PGSIZE-1)))
-#define PGROUNDDOWN(a) (((a)) & ~((uintp)(PGSIZE-1)))
 
 // Address in page table or page directory entry
 #define PTE_ADDR(pte)   ((uintp)(pte) & ~0xFFF)
