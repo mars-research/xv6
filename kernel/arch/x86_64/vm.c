@@ -86,6 +86,13 @@ kvmmap(uint64 va, uint64 pa, uint64 sz, uint64 perm)
     panic("kvmmap");
 }
 
+void
+vmmap(pml4e_t *pml4, uint64 va, uint64 pa, uint64 sz, uint64 perm)
+{
+  if (mappages(pml4, va, sz, pa, perm) != 0)
+    panic("vmmap");
+}
+
 /*
  * create a direct-map page table with kernel addresses
  * mapped. Used to setup up kernel page table and kernel
@@ -100,20 +107,20 @@ kvminit()
 
   // TODO: describe first two regions better
   // IO space
-  kvmmap(0, 0, EXTMEM, PSE_W|PSE_XD);
+  vmmap(pml4, 0, 0, EXTMEM, PSE_W|PSE_XD);
 
   // more devices
-  kvmmap(DEVSPACE, DEVSPACE, DEVSPACETOP-DEVSPACE, PSE_W|PSE_XD);
+  vmmap(pml4, DEVSPACE, DEVSPACE, DEVSPACETOP-DEVSPACE, PSE_W|PSE_XD);
 
   // map kernel text executable and read-only.
-  kvmmap(KERNBASE, KERNBASE, (uint64)etext-KERNBASE, 0);
+  vmmap(pml4, KERNBASE, KERNBASE, (uint64)etext-KERNBASE, 0);
 
   // map kernel data and the physical RAM we'll make use of.
-  kvmmap((uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PSE_W|PSE_XD);
+  vmmap(pml4, (uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PSE_W|PSE_XD);
 
   // map the trampoline for trap entry/exit to
   // the highest virtual address in the kernel.
-  // kvmmap(TRAMPOLINE, (uint64)trampoline, PGSIZE, PSE_R | PSE_X);
+  // mappages(pml4, TRAMPOLINE, (uint64)trampoline, PGSIZE, PSE_R | PSE_X);
 
   return pml4;
 }
