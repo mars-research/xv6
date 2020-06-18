@@ -43,6 +43,9 @@ void            release(struct spinlock*);
 // arch/$ARCH/proc64.h
 int             cpuid(void);
 struct cpu*     mycpu(void);
+void            procinit(void);
 
 // arch/$ARCH/vm.c
+void            kvmmap(uint64, uint64, uint64, uint64);
 void            kpaginginit(void);
+void            loadkpml4(void);

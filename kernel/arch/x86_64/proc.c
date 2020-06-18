@@ -3,6 +3,7 @@
 #include "../../spinlock.h"
 #include "../../defs.h"
 #include "../../date.h"
+#include "../../memlayout.h"
 #include "defs.h"
 #include "x86_64.h"
 #include "mmu.h"
@@ -41,4 +42,26 @@ mycpu(void)
       return &cpus[i];
   }
   panic("unknown apicid\n");
+}
+
+void
+procinit(void)
+{
+  struct proc *p;
+  
+  initlock(&pid_lock, "nextpid");
+  for(p = proc; p < &proc[NPROC]; p++) {
+      initlock(&p->lock, "proc");
+
+      // Allocate a page for the process's kernel stack.
+      // Map it high in memory, followed by an invalid
+      // guard page.
+      char *pa = kalloc();
+      if(pa == 0)
+        panic("kalloc");
+      uint64 va = KSTACK((int) (p - proc));
+      kvmmap(va, (uint64)pa, PGSIZE, PSE_W);
+      p->kstack = va;
+  }
+  loadkpml4();
 }
