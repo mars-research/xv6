@@ -37,5 +37,11 @@ Things of note
 -- Leave architecture independent definitions in kernel/ and move all
    architecture dependent implementations to kernel/arch/x86_64
 
+-- Instead of using one kernel page table and per-process user-space page tables,
+   we map kernel space virtual addresses in every process' page tables.
 
+To review
+---------
 
+-- switchkvm()/kinithart() has been renamed to loadkpml4(). The function
+   (re)loads CR3 with the kernel's PML4.
