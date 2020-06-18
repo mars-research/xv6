@@ -21,11 +21,10 @@ SECTIONS {
 		*(.rodata .rodata.*);
 	}
 
-	/* Define EndText symbol to current value of . */
-	PROVIDE(etext = .);
-
 	/* Align data section with 4K page boundary */
 	. = ALIGN(0x1000);
+	/* Define EndText symbol to current value of . */
+	PROVIDE(etext = .);
 
 	/* Conventionally, Unix linkers provide pseudo-symbols
 	 * etext, edata, and end, at the end of the text, data, and bss.
@@ -34,7 +33,6 @@ SECTIONS {
 	 * symbols, because the convention started before there was a
 	 * read-only rodata section between text and data.
 	 * Note: This implementation links rodata before the text section. */
-	PROVIDE(data = .);
 
 	/* The data segment */
 	.data : {
