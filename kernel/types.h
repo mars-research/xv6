@@ -9,12 +9,12 @@ typedef unsigned int   uint;
 typedef unsigned short ushort;
 typedef unsigned char  uchar;
 
+typedef int64_t  int64;
+
 typedef uint8_t  uint8;
 typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
 
 typedef uintptr_t uintp;
-
-typedef uintp pde_t;
 #endif // __XV6_TYPES_H_

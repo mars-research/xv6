@@ -43,3 +43,6 @@ void            release(struct spinlock*);
 // arch/$ARCH/proc64.h
 int             cpuid(void);
 struct cpu*     mycpu(void);
+
+// arch/$ARCH/vm.c
+void            kpaginginit(void);

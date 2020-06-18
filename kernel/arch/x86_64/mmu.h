@@ -76,15 +76,15 @@
 #define NSEGS 8
 
 // Page table/directory entry flags.
-#define PTE_P           0x001   // Present
-#define PTE_W           0x002   // Writeable
-#define PTE_U           0x004   // User
-#define PTE_PWT         0x008   // Write-Through
-#define PTE_PCD         0x010   // Cache-Disable
-#define PTE_A           0x020   // Accessed
-#define PTE_D           0x040   // Dirty
-#define PTE_PS          0x080   // Page Size
-#define PTE_MBZ         0x180   // Bits must be zero
+#define PSE_P           (1<<0)   // Present
+#define PSE_W           (1<<1)   // Writeable
+#define PSE_U           (1<<2)   // User
+#define PSE_PWT         (1<<3)   // Write-Through
+#define PSE_PCD         (1<<4)   // Cache-Disable
+#define PSE_A           (1<<5)   // Accessed
+#define PSE_D           (1<<6)   // Dirty
+#define PSE_PS          (1<<7)   // Page Size
+#define PSE_MBZ         0x180   // Bits must be zero
 
 // Page directory and page table constants.
 #define NPDENTRIES      512     // # directory entries per page directory
@@ -93,6 +93,7 @@
 #define PGSHIFT         12      // log2(PGSIZE)
 #define PTXSHIFT        12      // offset of PTX in a linear address
 #define PDXSHIFT        21      // offset of PDX in a linear address
+#define PX(level, va)   (((uint64)(va)>>(9*(level-1) + 12)) & PXMASK)
 
 #define PXMASK          0x1FF
 
@@ -142,6 +143,15 @@ struct segdesc {
 #define SEG_D      (1<<10)     /* default operation size 32-bit */
 #define SEG_G      (1<<11)     /* granularity */
 
+// IO-mapped device addresses
+#define EXTMEM  0x100000            // Start of extended memory
+#define DEVSPACE 0xFE000000         // Other devices are top of 32-bit address space
+#define DEVSPACETOP 0x100000000
+
+// Max virtual address
+#define MAXVA (1L << (9 + 9 + 9 + 9 + 12 - 1))
+
+// TODO: update this to 4-level paging scheme
 // A virtual address 'la' has a three-part structure as follows:
 //
 // +--------10------+-------10-------+---------12----------+
@@ -163,7 +173,15 @@ struct segdesc {
 #define PTE_ADDR(pte)   ((uintp)(pte) & ~0xFFF)
 #define PTE_FLAGS(pte)  ((uintp)(pte) &  0xFFF)
 
-typedef uintp pte_t;
+// Inter-convert paging structure entry and physical addr.
+#define PA2PSE(pa)  ((uint64)(pa) & 0x000FFFFFFFFFF000)
+#define PSE2PA(pse) ((((int64)(pse)<<12)>>12) & ~0xFFF)
+
+typedef uint64 pml4e_t;
+typedef uint64 pdpte_t;
+typedef uint64 pde_t;
+typedef uint64 pte_t;
+typedef uint64 pse_t;
 
 // Task state segment format
 struct taskstate {

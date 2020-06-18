@@ -17,6 +17,7 @@ main()
     printf("xv6 is booting\n");
     printf("\n");
     kinit();
+    kpaginginit();
     while (1);
   }
 }

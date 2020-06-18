@@ -123,7 +123,7 @@ PDE_loop:
 # Setup PDPT
   mov   $PDPT,  %ebx
   mov   $PD,   %eax
-  or    $(PTE_P|PTE_W), %eax
+  or    $(PSE_P|PSE_W), %eax
 # PDPT[2] -> PD -- 2 GiB - 3 GiB entry
   mov   $2,   %edi
   mov   %eax,   (%ebx, %edi, 8)      # PDPT[0] = ADDR(PD)
@@ -131,7 +131,7 @@ PDE_loop:
 # Setup PML4
   mov   $PML4,  %ebx
   mov   $PDPT,  %eax
-  or    $(PTE_P|PTE_W), %eax
+  or    $(PSE_P|PSE_W), %eax
 # PML4[0] -> PDPT
   xor   %edi,   %edi
   mov   %eax,   (%ebx, %edi, 8)      # PML4[0] = ADDR(PDPT)

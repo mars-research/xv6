@@ -7,13 +7,14 @@ OBJS = \
   $K/string.o \
   $K/console.o \
   $K/main.o \
-	$K/kalloc.o \
+  $K/kalloc.o \
   $K/arch/$(ARCH)/entry.o \
   $K/arch/$(ARCH)/setup.o \
   $K/arch/$(ARCH)/lapic.o \
   $K/arch/$(ARCH)/uart.o \
   $K/arch/$(ARCH)/spinlock.o \
   $K/arch/$(ARCH)/proc.o \
+  $K/arch/$(ARCH)/vm.o \
 
 QEMU = qemu-system-x86_64
 
@@ -121,7 +122,7 @@ clean:
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*/*.o */*.d */*.asm */*.sym \
 	$U/initcode $U/initcode.out $K/kernel fs.img \
-	mkfs/mkfs .gdbinit \
+	mkfs/mkfs \
         $U/usys.S \
 	$(UPROGS) \
 	xv6.img serial.log \
