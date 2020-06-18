@@ -18,6 +18,7 @@ main()
     printf("\n");
     kinit();
     kpaginginit();
+    printf("done\n");
     while (1);
   }
 }

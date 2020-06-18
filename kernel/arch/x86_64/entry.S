@@ -146,7 +146,7 @@ enablepaging:
 # Set IA32_EFER.LME; TODO: Enable SCE and NXE?
   mov   $EFER, %ecx
   rdmsr
-  or    $(EFER_LME),  %eax
+  or    $(EFER_LME|EFER_NXE),  %eax
   wrmsr
 
 # Set CR4.PAE
