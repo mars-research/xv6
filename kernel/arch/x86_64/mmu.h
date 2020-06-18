@@ -148,8 +148,15 @@ struct segdesc {
 #define DEVSPACE 0xFE000000         // Other devices are top of 32-bit address space
 #define DEVSPACETOP 0x100000000
 
-// Max virtual address
-#define MAXVA (1L << (9 + 9 + 9 + 9 + 12 - 1))
+// map the trampoline page to the highest address,
+// in both user and kernel space.
+#define MAXVA (1L<<(9 + 9 + 9 + 9 + 12))
+#define TRAMPOLINE (MAXVA - PGSIZE)
+
+// map kernel stacks beneath the trampoline,
+// each surrounded by invalid guard pages.
+#define KSTACK(p) (TRAMPOLINE - ((p)+1)* 2*PGSIZE)
+
 
 // TODO: update this to 4-level paging scheme
 // A virtual address 'la' has a three-part structure as follows:
