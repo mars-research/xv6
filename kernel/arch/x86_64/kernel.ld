@@ -1,4 +1,4 @@
-/* Linker script for xv6pp */
+/* Linker script for xv6 kernel */
 
 /* OUTPUT_ARCH(x86_64) */
 ENTRY(_start)
@@ -8,15 +8,17 @@ multiboot_load = kernelbase;
 
 SECTIONS {
 	/* Link kernel at 1Mib offset in the last TB
-   * of virtual address space. */
+	 * of virtual address space. */
 	. = kernelbase; /* 2GiB -- should match KERNBASE */
 
 	/* load sections physically starting at 1Mib */
 	.text : AT(multiboot_load) {
 		KEEP(*(.multiboot_header));
 		*(.text .text.*)
+		. = ALIGN(0x1000);
+		*(trampsec)
 	}
-	
+	. = ALIGN(0x1000);
 	.rodata : {
 		*(.rodata .rodata.*);
 	}
