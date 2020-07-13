@@ -40,6 +40,9 @@ Things of note
 -- Instead of using one kernel page table and per-process user-space page tables,
    we map kernel space virtual addresses in every process' page tables.
 
+-- The first instruction executed after `syscall` is `swapgs`. Hence, it is important that `syscall`
+   is never executed in ring-0 i.e., nesting syscalls will lead to crashes or undefined behaviour.
+
 To review
 ---------
 

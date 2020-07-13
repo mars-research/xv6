@@ -15,6 +15,8 @@ OBJS = \
   $K/arch/$(ARCH)/spinlock.o \
   $K/arch/$(ARCH)/proc.o \
   $K/arch/$(ARCH)/vm.o \
+  $K/arch/$(ARCH)/trampoline.o \
+  $K/arch/$(ARCH)/trap.o \
 
 QEMU = qemu-system-x86_64
 
