@@ -65,3 +65,16 @@ procinit(void)
   }
   loadkpml4();
 }
+
+// Return the current struct proc *, or zero if none.
+struct proc*
+myproc(void) {
+  struct proc *p;
+
+  pushcli();
+  p = mycpu()->proc;
+  popcli();
+
+  return p;
+}
+
