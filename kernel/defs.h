@@ -40,9 +40,10 @@ int             holding(struct spinlock*);
 void            initlock(struct spinlock*, char*);
 void            release(struct spinlock*);
 
-// arch/$ARCH/proc64.h
+// arch/$ARCH/proc.h
 int             cpuid(void);
 struct cpu*     mycpu(void);
+struct proc*    myproc(void);
 void            procinit(void);
 
 // arch/$ARCH/vm.c

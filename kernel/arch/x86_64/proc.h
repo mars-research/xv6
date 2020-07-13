@@ -1,3 +1,9 @@
+#ifndef XV6_PROC_H_
+#define XV6_PROC_H_
+
+#include "mmu.h"
+#include "../../spinlock.h"
+
 // Per-CPU state
 struct cpu {
   uint64 syscallno;            // Temporary used by sysentry
@@ -66,3 +72,5 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+#endif // XV6_PROC_H_

@@ -1,3 +1,6 @@
+#ifndef XV6_MEMLAYOUT_H_
+#define XV6_MEMLAYOUT_H_
+
 // Physical memory layout
 
 // the kernel uses physical memory thus:
@@ -20,3 +23,5 @@
 
 #define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1))
 #define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))
+
+#endif // XV6_MEMLAYOUT_H_
