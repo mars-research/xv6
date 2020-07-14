@@ -164,7 +164,7 @@ lcr3(uintp val)
 // lie about some register names in 64bit mode to avoid
 // clunky ifdefs in proc.c and trap.c.
 struct trapframe {
-  uint64 eax;      // rax
+  uint64 rax;
   uint64 rbx;
   uint64 rcx;
   uint64 rdx;
