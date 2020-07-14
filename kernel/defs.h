@@ -50,3 +50,10 @@ void            procinit(void);
 void            kvmmap(uint64, uint64, uint64, uint64);
 void            kpaginginit(void);
 void            loadkpml4(void);
+typedef uint64 pagetablee_t; // this is a hack; find a cleaner way to handle it
+int             copyout(pagetablee_t*, uint64, char*, uint64);
+int             copyin(pagetablee_t*, char*, uint64, uint64);
+int             copyinstr(pagetablee_t*, char*, uint64, uint64);
+
+// number of elements in fixed-size array
+#define NELEM(x) (sizeof(x)/sizeof((x)[0]))

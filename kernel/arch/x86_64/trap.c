@@ -14,6 +14,8 @@ extern uint64 vectors[];  // in vectors.S: array of 256 entry pointers
 struct spinlock tickslock;
 uint ticks;
 
+void syscall(void);
+
 void
 trapinit(void)
 {
@@ -51,7 +53,7 @@ trap(struct trapframe *tf)
       panic("commented exit();");
     myproc()->tf = tf;
     /* TODO: uncomment */
-    panic(" commented syscall();");
+    syscall();
     if(myproc()->killed)
       /* TODO: uncoment */
       panic("commented exit();");
