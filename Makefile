@@ -17,6 +17,7 @@ OBJS = \
   $K/arch/$(ARCH)/vm.o \
   $K/arch/$(ARCH)/trampoline.o \
   $K/arch/$(ARCH)/trap.o \
+  $K/arch/$(ARCH)/syscall.o \
 
 QEMU = qemu-system-x86_64
 

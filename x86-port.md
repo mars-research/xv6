@@ -48,3 +48,10 @@ To review
 
 -- switchkvm()/kinithart() has been renamed to loadkpml4(). The function
    (re)loads CR3 with the kernel's PML4.
+
+-- walkaddr(...) takes a userspace virtual address and retrieves the physical address
+   by walking the pml4 table. It only accepts userspace virtual addresses. Will walkuaddr(...)
+   be a better name for the function?
+
+-- in argraw(), the fourth arg is retrieved from RCX; however, Kashooek's implementation did so
+   from R10. The internet says RCX is right register. Why was R10 used?
