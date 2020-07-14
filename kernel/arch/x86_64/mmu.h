@@ -187,7 +187,7 @@ struct segdesc {
 
 // Inter-convert paging structure entry and physical addr.
 #define PA2PSE(pa)  ((uint64)(pa) & 0x000FFFFFFFFFF000)
-#define PSE2PA(pse) ((((int64)(pse)<<12)>>12) & ~0xFFF)
+#define PSE2PA(pse) ((((int64)(pse)<<16)>>16) & ~0xFFF) // zero out top 16 bits
 
 typedef uint64 pml4e_t;
 typedef uint64 pdpte_t;
