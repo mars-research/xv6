@@ -11,7 +11,7 @@ pml4e_t *kernel_pml4;
 
 extern char etext[];  // kernel.ld sets this to end of kernel code.
 
-// Return the address of the PTE in page table pagetable
+// Return the address of the PTE in page table pml4 
 // that corresponds to virtual address va.  If alloc!=0,
 // create any required page-table pages.
 //
@@ -49,6 +49,29 @@ walk(pml4e_t *pml4, uint64 va, int alloc)
   }
 
   return (pte_t*) &pgstr[PX(level, va)]; // level == 1
+}
+
+// Look up a virtual address, return the physical address,
+// or 0 if not mapped.
+// Can only be used to look up user pages.
+uint64
+walkaddr(pml4e_t *pml4, uint64 va)
+{
+  pte_t *pte;
+  uint64 pa;
+
+  if(va >= MAXVA)
+    return 0;
+
+  pte = walk(pml4, va, 0);
+  if(pte == 0)
+    return 0;
+  if((*pte & PSE_P) == 0)
+    return 0;
+  if((*pte & PSE_U) == 0)
+    return 0;
+  pa = PSE2PA(*pte);
+  return pa;
 }
 
 // Create PTEs for virtual addresses starting at va that refer to
@@ -139,4 +162,97 @@ kpaginginit()
 {
   kernel_pml4 = kvminit();
   loadkpml4();
+}
+
+// Copy from kernel to user.
+// Copy len bytes from src to virtual address dstva in a given page table.
+// Return 0 on success, -1 on error.
+int
+copyout(pml4e_t *pml4, uint64 dstva, char *src, uint64 len)
+{
+  uint64 n, va0, pa0;
+
+  while (len > 0) {
+    va0 = PGROUNDDOWN(dstva);
+    pa0 = walkaddr(pml4, va0);
+    if(pa0 == 0)
+      return -1;
+    n = PGSIZE - (dstva - va0);
+    if(n > len)
+      n = len;
+    memmove((void *)(pa0 + (dstva - va0)), src, n);
+
+    len -= n;
+    src += n;
+    dstva = va0 + PGSIZE;
+  }
+  return 0;
+}
+
+// Copy from user to kernel.
+// Copy len bytes to dst from virtual address srcva in a given page table.
+// Return 0 on success, -1 on error.
+int
+copyin(pml4e_t *pml4, char *dst, uint64 srcva, uint64 len)
+{
+  uint64 n, va0, pa0;
+
+  while (len > 0) {
+    va0 = PGROUNDDOWN(srcva);
+    pa0 = walkaddr(pml4, va0);
+    if(pa0 == 0)
+      return -1;
+    n = PGSIZE - (srcva - va0);
+    if(n > len)
+      n = len;
+    memmove(dst, (void *)(pa0 + (srcva - va0)), n);
+
+    len -= n;
+    dst += n;
+    srcva = va0 + PGSIZE;
+  }
+  return 0;
+}
+
+// Copy a null-terminated string from user to kernel.
+// Copy bytes to dst from virtual address srcva in a given page table,
+// until a '\0', or max.
+// Return 0 on success, -1 on error.
+int
+copyinstr(pml4e_t *pml4, char *dst, uint64 srcva, uint64 max)
+{
+  uint64 n, va0, pa0;
+  int got_null = 0;
+
+  while(got_null == 0 && max > 0){
+    va0 = PGROUNDDOWN(srcva);
+    pa0 = walkaddr(pml4, va0);
+    if(pa0 == 0)
+      return -1;
+    n = PGSIZE - (srcva - va0);
+    if(n > max)
+      n = max;
+
+    char *p = (char *) (pa0 + (srcva - va0));
+    while(n > 0){
+      if(*p == '\0'){
+        *dst = '\0';
+        got_null = 1;
+        break;
+      } else {
+        *dst = *p;
+      }
+      --n;
+      --max;
+      p++;
+      dst++;
+    }
+
+    srcva = va0 + PGSIZE;
+  }
+  if(got_null){
+    return 0;
+  } else {
+    return -1;
+  }
 }
