@@ -18,6 +18,8 @@ struct proc *initproc;
 int nextpid = 1;
 struct spinlock pid_lock;
 
+void swtch(struct context **old, struct context *new);
+
 // Must be called with interrupts disabled
 int
 cpuid() {
@@ -78,3 +80,29 @@ myproc(void) {
   return p;
 }
 
+// Switch to scheduler.  Must hold only p->lock
+// and have changed proc->state. Saves and restores
+// intena because intena is a property of this
+// kernel thread, not this CPU. It should
+// be proc->intena and proc->noff, but that would
+// break in the few places where a lock is held but
+// there's no process.
+void
+sched(void)
+{
+  int intena;
+  struct proc *p = myproc();
+
+  if(!holding(&p->lock))
+    panic("sched p->lock");
+  if(mycpu()->ncli != 1)
+    panic("sched locks");
+  if(p->state == RUNNING)
+    panic("sched running");
+  if(readeflags() & FL_IF)
+    panic("sched interruptible");
+
+  intena = mycpu()->intena;
+  swtch(&p->context, mycpu()->scheduler);
+  mycpu()->intena = intena;
+}

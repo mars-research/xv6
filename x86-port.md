@@ -55,3 +55,10 @@ To review
 
 -- in argraw(), the fourth arg is retrieved from RCX; however, Kashooek's implementation did so
    from R10. The internet says RCX is right register. Why was R10 used?
+
+-- the new strategy for context switch in swtch.S might be simpler and easier to understand.
+   `struct cpu` has a `struct context` member as opposed to a pointer. `swtch` simply saves
+   registers into this `struct` instead of pushing registers in reverse order and storing
+   the stack pointer as `struct context*`
+   Should we adopt this method as well? Do we not do this because we have to save the
+   instruction pointer and the only (easy) way to do it is as a return address?
