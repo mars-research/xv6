@@ -40,17 +40,20 @@ int             holding(struct spinlock*);
 void            initlock(struct spinlock*, char*);
 void            release(struct spinlock*);
 
-// arch/$ARCH/proc.h
+// arch/$ARCH/proc.c
 int             cpuid(void);
 struct cpu*     mycpu(void);
 struct proc*    myproc(void);
 void            procinit(void);
+void            sched(void);
+void            sleep(void*, struct spinlock*);
+void            wakeup(void*);
 
 // arch/$ARCH/vm.c
 void            kvmmap(uint64, uint64, uint64, uint64);
 void            kpaginginit(void);
 void            loadkpml4(void);
-typedef uint64 pagetablee_t; // this is a hack; find a cleaner way to handle it
+typedef uint64  pagetablee_t; // this is a hack; TODO: fix it
 int             copyout(pagetablee_t*, uint64, char*, uint64);
 int             copyin(pagetablee_t*, char*, uint64, uint64);
 int             copyinstr(pagetablee_t*, char*, uint64, uint64);
