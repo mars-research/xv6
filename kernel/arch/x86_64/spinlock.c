@@ -1,7 +1,3 @@
-// temp definition. TODO: remove
-struct cpu;
-struct cpu* mycpu(void);
-
 // Mutual exclusion spin locks.
 
 #include "../../types.h"
