@@ -65,5 +65,9 @@ int             copyout(pagetablee_t*, uint64, char*, uint64);
 int             copyin(pagetablee_t*, char*, uint64, uint64);
 int             copyinstr(pagetablee_t*, char*, uint64, uint64);
 
+// arch/$ARCH/ioapic.c
+void            ioapicenable(int, int);
+void            ioapicinit(void);
+
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
