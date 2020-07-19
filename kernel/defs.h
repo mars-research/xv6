@@ -5,6 +5,7 @@
 
 // forward declarations
 struct spinlock;
+struct sleeplock;
 
 // string.c
 int             memcmp(const void*, const void*, uint);
@@ -35,10 +36,16 @@ void            kfree(void*);
 void*           kalloc(void);
 
 // arch/$ARCH/spinlock.c
-void            acquire(struct spinlock*);
-int             holding(struct spinlock*);
 void            initlock(struct spinlock*, char*);
+void            acquire(struct spinlock*);
 void            release(struct spinlock*);
+int             holding(struct spinlock*);
+
+// sleeplock.c
+void            initsleeplock(struct sleeplock*, char*);
+void            acquiresleep(struct sleeplock*);
+void            releasesleep(struct sleeplock*);
+int             holdingsleep(struct sleeplock*);
 
 // arch/$ARCH/proc.c
 int             cpuid(void);

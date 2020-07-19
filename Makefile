@@ -20,7 +20,9 @@ OBJS = \
   $K/arch/$(ARCH)/syscall.o \
   $K/arch/$(ARCH)/swtch.o \
   $K/arch/$(ARCH)/sleeplock.o \
-  $K/arch/$(ARCH)/spinlock.o \
+  $K/arch/$(ARCH)/mp.o \
+  $K/arch/$(ARCH)/ioapic.o \
+  $K/arch/$(ARCH)/picirq.o \
 
 QEMU = qemu-system-x86_64
 
