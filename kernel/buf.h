@@ -1,3 +1,9 @@
+#ifndef XV6_BUF_H_
+#define XV6_BUF_H_
+
+#include "fs.h"        // BSIZE
+#include "sleeplock.h"
+
 struct buf {
   int valid;   // has data been read from disk?
   int disk;    // does disk "own" buf?
@@ -11,3 +17,4 @@ struct buf {
   uchar data[BSIZE];
 };
 
+#endif // XV6_BUF_H_

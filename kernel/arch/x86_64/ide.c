@@ -4,14 +4,14 @@
 #include "../../defs.h"
 #include "../../param.h"
 #include "../../memlayout.h"
+#include "../../buf.h"
+#include "../../spinlock.h"
+#include "../../sleeplock.h"
+#include "../../fs.h"
 #include "mmu.h"
 #include "proc.h"
 #include "x86_64.h"
 #include "traps.h"
-#include "../../spinlock.h"
-#include "../../sleeplock.h"
-#include "../../fs.h"
-#include "buf.h"
 
 #define SECTOR_SIZE   512
 #define IDE_BSY       0x80
@@ -91,7 +91,7 @@ idestart(struct buf *b)
   outb(0x1f4, (sector >> 8) & 0xff);
   outb(0x1f5, (sector >> 16) & 0xff);
   outb(0x1f6, 0xe0 | ((b->dev&1)<<4) | ((sector>>24)&0x0f));
-  if(b->flags & B_DIRTY){
+  if(b->valid){
     outb(0x1f7, write_cmd);
     outsl(0x1f0, b->data, BSIZE/4);
   } else {
@@ -115,12 +115,11 @@ ideintr(void)
   idequeue = b->qnext;
 
   // Read data if needed.
-  if(!(b->flags & B_DIRTY) && idewait(1) >= 0)
+  if(!b->valid && idewait(1) >= 0)
     insl(0x1f0, b->data, BSIZE/4);
 
-  // Wake process waiting for this buf.
-  b->flags |= B_VALID;
-  b->flags &= ~B_DIRTY;
+  // Wake process waiting for this buf
+  b->disk = 0;
   wakeup(b);
 
   // Start disk on next buf in queue.
@@ -132,16 +131,16 @@ ideintr(void)
 
 //PAGEBREAK!
 // Sync buf with disk.
-// If B_DIRTY is set, write buf to disk, clear B_DIRTY, set B_VALID.
-// Else if B_VALID is not set, read buf from disk, set B_VALID.
+// If write != 0, write buf to disk
+// Else, read buf from disk
 void
-iderw(struct buf *b)
+iderw(struct buf *b, int write)
 {
   struct buf **pp;
 
   if(!holdingsleep(&b->lock))
     panic("iderw: buf not locked");
-  if((b->flags & (B_VALID|B_DIRTY)) == B_VALID)
+  if(b->valid && !write)
     panic("iderw: nothing to do");
   if(b->dev != 0 && !havedisk1)
     panic("iderw: ide disk 1 not present");
@@ -159,7 +158,7 @@ iderw(struct buf *b)
     idestart(b);
 
   // Wait for request to finish.
-  while((b->flags & (B_VALID|B_DIRTY)) != B_VALID){
+  while (b->disk == 1) {
     sleep(b, &idelock);
   }
 
