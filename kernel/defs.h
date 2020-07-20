@@ -6,6 +6,7 @@
 // forward declarations
 struct spinlock;
 struct sleeplock;
+struct buf;
 
 // string.c
 int             memcmp(const void*, const void*, uint);
@@ -68,6 +69,12 @@ int             copyinstr(pagetablee_t*, char*, uint64, uint64);
 // arch/$ARCH/ioapic.c
 void            ioapicenable(int, int);
 void            ioapicinit(void);
+
+// arch/$ARCH/ide.c
+void            diskinit(void);
+void            diskintr(void);
+void            diskrw(struct buf *, int);
+
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

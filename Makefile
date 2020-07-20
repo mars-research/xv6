@@ -8,6 +8,7 @@ OBJS = \
   $K/console.o \
   $K/main.o \
   $K/kalloc.o \
+  $K/bio.o \
   $K/arch/$(ARCH)/entry.o \
   $K/arch/$(ARCH)/setup.o \
   $K/arch/$(ARCH)/lapic.o \
@@ -23,6 +24,7 @@ OBJS = \
   $K/arch/$(ARCH)/mp.o \
   $K/arch/$(ARCH)/ioapic.o \
   $K/arch/$(ARCH)/picirq.o \
+  $K/arch/$(ARCH)/ide.o \
 
 QEMU = qemu-system-x86_64
 

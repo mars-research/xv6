@@ -165,3 +165,21 @@ iderw(struct buf *b, int write)
 
   release(&idelock);
 }
+
+void
+diskinit(void)
+{
+  ideinit();
+}
+
+void
+diskintr(void)
+{
+  ideintr();
+}
+
+void
+diskrw(struct buf *b, int write)
+{
+  iderw(b, write);
+}

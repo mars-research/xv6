@@ -18,10 +18,12 @@
 #include "param.h"
 #include "spinlock.h"
 #include "sleeplock.h"
-#include "riscv.h"
 #include "defs.h"
 #include "fs.h"
 #include "buf.h"
+
+#define READ (0)  // arg for iderw(...)
+#define WRITE (1)
 
 struct {
   struct spinlock lock;
@@ -94,7 +96,7 @@ bread(uint dev, uint blockno)
 
   b = bget(dev, blockno);
   if(!b->valid) {
-    virtio_disk_rw(b, 0);
+    diskrw(b, READ);
     b->valid = 1;
   }
   return b;
@@ -106,7 +108,7 @@ bwrite(struct buf *b)
 {
   if(!holdingsleep(&b->lock))
     panic("bwrite");
-  virtio_disk_rw(b, 1);
+  diskrw(b, WRITE);
 }
 
 // Release a locked buffer.
@@ -147,5 +149,3 @@ bunpin(struct buf *b) {
   b->refcnt--;
   release(&bcache.lock);
 }
-
-
