@@ -9,6 +9,7 @@ OBJS = \
   $K/main.o \
   $K/kalloc.o \
   $K/bio.o \
+  $K/log.o \
   $K/arch/$(ARCH)/entry.o \
   $K/arch/$(ARCH)/setup.o \
   $K/arch/$(ARCH)/lapic.o \

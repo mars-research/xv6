@@ -48,6 +48,14 @@ void            acquiresleep(struct sleeplock*);
 void            releasesleep(struct sleeplock*);
 int             holdingsleep(struct sleeplock*);
 
+// bio.c
+struct buf*     bread(uint, uint);
+void            bwrite(struct buf*);
+void            brelse(struct buf*);
+void            bpin(struct buf*);
+void            bunpin(struct buf*);
+
+
 // arch/$ARCH/proc.c
 int             cpuid(void);
 struct cpu*     mycpu(void);
