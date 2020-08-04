@@ -18,7 +18,7 @@ swtch:
 
   # %rsp now points to what looks like a struct context
   # switch stacks
-  mov %rsp, (rdi)
+  mov %rsp, (%rdi)
   mov %rsi, %rsp
 
   pop %r15
