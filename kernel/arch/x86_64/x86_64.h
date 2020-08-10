@@ -1,5 +1,10 @@
+#ifndef XV6_X86_64_H_
+#define XV6_X86_64_H_
+
 // Routines to let C code use special x86 instructions.
 #include "../../types.h"
+#include "../../param.h"
+#include "mmu.h"
 
 static inline uchar
 inb(ushort port)
@@ -189,3 +194,43 @@ struct trapframe {
   uint64 esp;     // rsp
   uint64 ds;      // ss
 };
+
+// Per-CPU state
+struct cpu {
+  uint64 syscallno;            // Temporary used by sysentry
+  uint64 usp;                  // Temporary used by sysentry
+  struct proc *proc;           // The process running on this cpu or null
+  uchar apicid;                // Local APIC ID
+  struct context *scheduler;   // swtch() here to enter scheduler
+  struct taskstate ts;         // Used by x86 to find stack for interrupt
+  struct segdesc gdt[NSEGS];   // x86 global descriptor table
+  volatile uint started;       // Has the CPU started?
+  int ncli;                    // Depth of pushcli nesting.
+  int intena;                  // Were interrupts enabled before pushcli?
+};
+
+extern struct cpu cpus[NCPU];
+extern int ncpu;
+
+// Saved registers for kernel context switches.
+// Don't need to save all the segment registers (%cs, etc),
+// because they are constant across kernel contexts.
+// Don't need to save %eax, %ecx, %edx, because the
+// x86 convention is that the caller has saved them.
+// Contexts are stored at the bottom of the stack they
+// describe; the stack pointer is the address of the context.
+// The layout of the context matches the layout of the stack in swtch.S
+// at the "Switch stacks" comment. Switch doesn't save eip explicitly,
+// but it is on the stack and allocproc() manipulates it.
+struct context {
+  uint64 r15;
+  uint64 r14;
+  uint64 r13;
+  uint64 r12;
+  uint64 r11;
+  uint64 rbx;
+  uint64 rbp;
+  uint64 rip;
+};
+
+#endif // XV6_X86_64_H_

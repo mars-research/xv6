@@ -2,7 +2,7 @@
 #include "../../param.h"
 #include "../../memlayout.h"
 #include "../../spinlock.h"
-#include "proc.h"
+#include "../../proc.h"
 #include "../../syscall.h"
 #include "../../defs.h"
 #include "x86_64.h"
@@ -14,7 +14,7 @@ fetchaddr(uint64 addr, uint64 *ip)
   struct proc *p = myproc();
   if(addr >= p->sz || addr+sizeof(*ip) > p->sz)
     return -1;
-  if(copyin(p->pml4, (char *)ip, addr, sizeof(*ip)) != 0)
+  if(copyin(p->pagetable, (char *)ip, addr, sizeof(*ip)) != 0)
     return -1;
   return 0;
 }
@@ -25,7 +25,7 @@ int
 fetchstr(uint64 addr, char *buf, int max)
 {
   struct proc *p = myproc();
-  int err = copyinstr(p->pml4, buf, addr, max);
+  int err = copyinstr(p->pagetable, buf, addr, max);
   if(err < 0)
     return err;
   return strlen(buf);

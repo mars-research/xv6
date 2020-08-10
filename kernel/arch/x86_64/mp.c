@@ -8,7 +8,6 @@
 #include "mp.h"
 #include "x86_64.h"
 #include "mmu.h"
-#include "proc.h"
 
 extern volatile uint *lapic;
 

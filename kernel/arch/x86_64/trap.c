@@ -1,7 +1,7 @@
 #include "../../types.h"
 #include "../../defs.h"
 #include "../../param.h"
-#include "proc.h"
+#include "../../proc.h"
 #include "x86_64.h"
 #include "traps.h"
 #include "../../spinlock.h"

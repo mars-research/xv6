@@ -4,12 +4,12 @@
 #include "../../param.h"
 #include "../../date.h"
 #include "../../memlayout.h"
-#include "mmu.h"
 #include "../../spinlock.h"
+#include "../../defs.h"
+#include "../../proc.h"
+#include "mmu.h"
 #include "x86_64.h"
 #include "defs.h"
-#include "proc.h"
-#include "../../defs.h"
 
 void
 initlock(struct spinlock *lk, char *name)

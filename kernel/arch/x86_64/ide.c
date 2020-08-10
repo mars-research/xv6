@@ -9,7 +9,6 @@
 #include "../../sleeplock.h"
 #include "../../fs.h"
 #include "mmu.h"
-#include "proc.h"
 #include "x86_64.h"
 #include "traps.h"
 
