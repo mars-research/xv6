@@ -10,6 +10,9 @@ OBJS = \
   $K/kalloc.o \
   $K/bio.o \
   $K/log.o \
+  $K/file.o \
+  $K/fs.o \
+  $K/pipe.o \
   $K/arch/$(ARCH)/entry.o \
   $K/arch/$(ARCH)/setup.o \
   $K/arch/$(ARCH)/lapic.o \
@@ -36,6 +39,7 @@ OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
 
 CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb
+CFLAGS += -D$(ARCH)
 CFLAGS += -MD
 CFLAGS += -mcmodel=large
 CFLAGS += -ffreestanding -fno-common -nostdlib

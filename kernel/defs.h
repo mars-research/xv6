@@ -7,6 +7,10 @@
 struct spinlock;
 struct sleeplock;
 struct buf;
+struct superblock;
+struct inode;
+struct stat;
+struct pipe;
 
 // string.c
 int             memcmp(const void*, const void*, uint);
@@ -55,6 +59,47 @@ void            brelse(struct buf*);
 void            bpin(struct buf*);
 void            bunpin(struct buf*);
 
+// log.c
+void            initlog(int, struct superblock*);
+void            log_write(struct buf*);
+void            begin_op();
+void            end_op();
+
+// file.c
+struct file*    filealloc(void);
+void            fileclose(struct file*);
+struct file*    filedup(struct file*);
+void            fileinit(void);
+int             fileread(struct file*, uint64, int n);
+int             filestat(struct file*, uint64 addr);
+int             filewrite(struct file*, uint64, int n);
+
+// fs.c
+void            fsinit(int);
+int             dirlink(struct inode*, char*, uint);
+struct inode*   dirlookup(struct inode*, char*, uint*);
+struct inode*   ialloc(uint, short);
+struct inode*   idup(struct inode*);
+void            iinit();
+void            ilock(struct inode*);
+void            iput(struct inode*);
+void            iunlock(struct inode*);
+void            iunlockput(struct inode*);
+void            iupdate(struct inode*);
+int             namecmp(const char*, const char*);
+struct inode*   namei(char*);
+struct inode*   nameiparent(char*, char*);
+int             readi(struct inode*, int, uint64, uint, uint);
+void            stati(struct inode*, struct stat*);
+int             writei(struct inode*, int, uint64, uint, uint);
+
+// syscall.c
+int             argint(int, int*);
+int             argstr(int, char*, int);
+int             argaddr(int, uint64 *);
+int             fetchstr(uint64, char*, int);
+int             fetchaddr(uint64, uint64*);
+void            syscall();
 
 // arch/$ARCH/proc.c
 int             cpuid(void);
@@ -64,6 +109,8 @@ void            procinit(void);
 void            sched(void);
 void            sleep(void*, struct spinlock*);
 void            wakeup(void*);
+int             either_copyin(void*, int, uint64, uint64);
+int             either_copyout(int, uint64, void*, uint64);
 
 // arch/$ARCH/vm.c
 void            kvmmap(uint64, uint64, uint64, uint64);
@@ -82,6 +129,12 @@ void            ioapicinit(void);
 void            diskinit(void);
 void            diskintr(void);
 void            diskrw(struct buf *, int);
+
+// arch/$ARCH/pipe.c
+int             pipealloc(struct file**, struct file**);
+void            pipeclose(struct pipe*, int);
+int             piperead(struct pipe*, uint64, int);
+int             pipewrite(struct pipe*, uint64, int);
 
 
 // number of elements in fixed-size array
