@@ -30,6 +30,11 @@ OBJS = \
   $K/arch/$(ARCH)/picirq.o \
   $K/arch/$(ARCH)/ide.o \
 
+ifeq ($(ARCH),"x86_64")
+OBJS += \
+  $K/arch/$(ARCH)/vectors.o
+endif
+
 QEMU = qemu-system-x86_64
 
 CC = $(TOOLPREFIX)gcc
@@ -60,6 +65,9 @@ $K/kernel: $(OBJS) $K/kernel.ld # $U/initcode
 	$(LD) $(LDFLAGS) -T $K/arch/$(ARCH)/kernel.ld -o $K/kernel $(OBJS) 
 	$(OBJDUMP) -S $K/kernel > $K/kernel.asm
 	$(OBJDUMP) -t $K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $K/kernel.sym
+ 
+$K/arch/$(ARCH)/vectors.S: $K/arch/$(ARCH)/vectors.pl
+	./$K/arch/$(ARCH)/vectors.pl > $K/arch/$(ARCH)/vectors.S
 
 $U/initcode: $U/initcode.S
 	$(CC) $(CFLAGS) -nostdinc -I. -Ikernel -c $U/initcode.S -o $U/initcode.o
@@ -142,6 +150,7 @@ clean:
 	$(UPROGS) \
 	xv6.img serial.log \
 	*/*/*/*.o */*/*/*.d \
+	*/*/*/vectors.S \
 	$K/bootblock
 
 # try to generate a unique GDB port
