@@ -55,11 +55,13 @@
 // Paging structure entry flags
 #define PSE_P       (1<<0)          // P;   1: present
 #define PSE_W       (1<<1)          // RW;  1: write enabled region
+#define PSE_R       (0<<1)          // RW;  0: read only region
 #define PSE_U       (1<<2)          // U/S; 1: user access allowed
 #define PSE_PS      (1<<7)          // PS (page size)
 /* Disables instruction fetches from memory region mapped by this
  * entry iff IA32_EFER.NXE == 1. MUST be 0 otherwise. */
 #define PSE_XD      (1L<<63)         // XD;  1: execution disabled
+#define PSE_X       (0L<<63)         // XD;  0: execution not disabled
 
 #define SEG_KCODE 1  // kernel code
 #define SEG_KDATA 2  // kernel data+stack
