@@ -7,10 +7,8 @@
 #include "../../spinlock.h"
 
 // Interrupt descriptor table (shared by all CPUs).
-/* TODO: uncomment
 struct intgate idt[256];
 extern uint64 vectors[];  // in vectors.S: array of 256 entry pointers
-*/
 struct spinlock tickslock;
 uint ticks;
 
@@ -19,19 +17,16 @@ void syscall(void);
 void
 trapinit(void)
 {
-  /* TODO: uncomment
   int i;
 
   for(i=0; i<256; i++) {
-    idt[i] = INTDESC(KCSEG, vectors[i], INT_P | SEG_INTR64);
+    idt[i] = INTDESC(KCSEG, vectors[i], INT_P|SEG_INTR64);
   }
   idtinit();
-  */
 
   initlock(&tickslock, "time");
 }
 
-/* TODO: uncomment
 void
 idtinit(void)
 {
@@ -41,7 +36,6 @@ idtinit(void)
   dtr.base = (uint64)idt;
   lidt((void *)&dtr.limit);
 }
-*/
 
 //PAGEBREAK: 41
 void

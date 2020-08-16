@@ -30,9 +30,10 @@ OBJS = \
   $K/arch/$(ARCH)/picirq.o \
   $K/arch/$(ARCH)/ide.o \
 
-ifeq ($(ARCH),"x86_64")
-OBJS += \
-  $K/arch/$(ARCH)/vectors.o
+ifeq ($(ARCH),x86_64)
+# $(info [INFO]: x86_64; including vectors.o to OBJS)
+  OBJS += \
+    $K/arch/$(ARCH)/vectors.o
 endif
 
 QEMU = qemu-system-x86_64

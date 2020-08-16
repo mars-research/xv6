@@ -46,7 +46,7 @@ void            acquire(struct spinlock*);
 void            release(struct spinlock*);
 int             holding(struct spinlock*);
 
-// sleeplock.c
+// arch/$ARCH/sleeplock.c
 void            initsleeplock(struct sleeplock*, char*);
 void            acquiresleep(struct sleeplock*);
 void            releasesleep(struct sleeplock*);
@@ -136,6 +136,9 @@ void            pipeclose(struct pipe*, int);
 int             piperead(struct pipe*, uint64, int);
 int             pipewrite(struct pipe*, uint64, int);
 
+// arch/$ARCH/trap.c
+void            idtinit(void);
+void            trapinit(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

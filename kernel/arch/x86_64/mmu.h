@@ -164,6 +164,13 @@ struct segdesc {
 // each surrounded by invalid guard pages.
 #define KSTACK(p) (TRAMPOLINE - ((p)+1)* 2*PGSIZE)
 
+// System segment type bits
+#define SEG_LDT    (2<<0)      /* local descriptor table */
+#define SEG_TSS64A (9<<0)      /* available 64-bit TSS */
+#define SEG_TSS64B (11<<0)     /* busy 64-bit TSS */
+#define SEG_CALL64 (12<<0)     /* 64-bit call gate */
+#define SEG_INTR64 (14<<0)     /* 64-bit interrupt gate */
+#define SEG_TRAP64 (15<<0)     /* 64-bit trap gate */
 
 // TODO: update this to 4-level paging scheme
 // A virtual address 'la' has a three-part structure as follows:
@@ -199,79 +206,41 @@ typedef uint64 pse_t;
 
 // Task state segment format
 struct taskstate {
-  uint link;         // Old ts selector
-  uint esp0;         // Stack pointers and segment selectors
-  ushort ss0;        //   after an increase in privilege level
-  ushort padding1;
-  uint *esp1;
-  ushort ss1;
-  ushort padding2;
-  uint *esp2;
-  ushort ss2;
-  ushort padding3;
-  void *cr3;         // Page directory base
-  uint *eip;         // Saved state from last task switch
-  uint eflags;
-  uint eax;          // More saved state (registers)
-  uint ecx;
-  uint edx;
-  uint ebx;
-  uint *esp;
-  uint *ebp;
-  uint esi;
-  uint edi;
-  ushort es;         // Even more saved state (segment selectors)
-  ushort padding4;
-  ushort cs;
-  ushort padding5;
-  ushort ss;
-  ushort padding6;
-  ushort ds;
-  ushort padding7;
-  ushort fs;
-  ushort padding8;
-  ushort gs;
-  ushort padding9;
-  ushort ldt;
-  ushort padding10;
-  ushort t;          // Trap on task switch
-  ushort iomb;       // I/O map base address
+  uint8 reserved0[4];
+  uint64 rsp[3];
+  uint64 ist[8];
+  uint8 reserved1[10];
+  uint16 iomba;
+  uint8 iopb[0];
+} __attribute__ ((packed));
+
+#define INT_P      (1<<7)      /* interrupt descriptor present */
+
+struct intgate
+{
+	uint16 rip0;
+	uint16 cs;
+	uint8 reserved0;
+	uint8 bits;
+	uint16 rip1;
+	uint32 rip2;
+	uint32 reserved1;
 };
 
-// PAGEBREAK: 12
-// Gate descriptors for interrupts and traps
-struct gatedesc {
-  uint off_15_0 : 16;   // low 16 bits of offset in segment
-  uint cs : 16;         // code segment selector
-  uint args : 5;        // # args, 0 for interrupt/trap gates
-  uint rsv1 : 3;        // reserved(should be zero I guess)
-  uint type : 4;        // type(STS_{TG,IG32,TG32})
-  uint s : 1;           // must be 0 (system)
-  uint dpl : 2;         // descriptor(meaning new) privilege level
-  uint p : 1;           // Present
-  uint off_31_16 : 16;  // high bits of offset in segment
-};
-
-// Set up a normal interrupt/trap gate descriptor.
-// - istrap: 1 for a trap (= exception) gate, 0 for an interrupt gate.
-//   interrupt gate clears FL_IF, trap gate leaves FL_IF alone
-// - sel: Code segment selector for interrupt/trap handler
-// - off: Offset in code segment for interrupt/trap handler
-// - dpl: Descriptor Privilege Level -
-//        the privilege level required for software to invoke
-//        this interrupt/trap gate explicitly using an int instruction.
-#define SETGATE(gate, istrap, sel, off, d)                \
-{                                                         \
-  (gate).off_15_0 = (uint)(off) & 0xffff;                \
-  (gate).cs = (sel);                                      \
-  (gate).args = 0;                                        \
-  (gate).rsv1 = 0;                                        \
-  (gate).type = (istrap) ? STS_TG32 : STS_IG32;           \
-  (gate).s = 0;                                           \
-  (gate).dpl = (d);                                       \
-  (gate).p = 1;                                           \
-  (gate).off_31_16 = (uint)(off) >> 16;                  \
+// INTDESC constructs an interrupt descriptor literal
+// that records the given code segment, instruction pointer,
+// and type bits.
+#define INTDESC(cs, rip, bits) (struct intgate){ \
+	(rip)&0xffff, (cs), 0, bits, ((rip)>>16)&0xffff, \
+	(uint64)(rip)>>32, 0, \
 }
 
-#endif // SETGATE
+// See section 4.6 of amd64 vol2
+struct desctr
+{
+  uint16 limit;
+  uint64 base;
+} __attribute__((packed, aligned(16)));   // important!
+
+#endif // __ASSEMBLER__
 #endif // XV6_MMU_H_

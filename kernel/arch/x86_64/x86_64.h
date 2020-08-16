@@ -80,21 +80,10 @@ lgdt(struct segdesc *p, int size)
   asm volatile("lgdt (%0)" : : "r" (pd));
 }
 
-struct gatedesc;
-
 static inline void
-lidt(struct gatedesc *p, int size)
+lidt(void *p)
 {
-  volatile ushort pd[5];
-  uintp addr = (uintp)p;
-
-  pd[0] = size-1;
-  pd[1] = (uint64)addr;
-  pd[2] = (uint64)addr >> 16;
-  pd[3] = (uint64)addr >> 32;
-  pd[4] = (uint64)addr >> 48;
-
-  asm volatile("lidt (%0)" : : "r" (pd));
+  asm volatile("lidt (%0)" : : "r" (p) : "memory");
 }
 
 static inline void
