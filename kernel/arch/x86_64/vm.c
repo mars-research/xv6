@@ -3,13 +3,33 @@
 #include "../../defs.h"
 #include "x86_64.h"
 #include "mmu.h"
+#include "msr.h"
 
-/*
- * the kernel's page table.
- */
-pml4e_t *kernel_pml4;
+pml4e_t *kernel_pml4; // kernel pml4, used by scheduler and bootstrap
 
 extern char etext[];  // kernel.ld sets this to end of kernel code.
+extern uint64 trampoline[]; // see trampoline.S
+extern uint64 sysentry[];   // see trampoline.S
+
+// Bootstrap GDT. Implements a flat segmentation model where logical
+// addresses are identity mapped to linear addresses. The descriptors
+// correspond to the indexes as follows:
+// 0 - Null descriptor. Required.
+// 1 - 32-bit kernel code segment
+// 2 - 64-bit kernel code segment
+// 3 - data segment
+// 6 - user data segment
+// 7 - user code segment
+struct segdesc bootgdt[NSEGS] = {
+  [0] = SEGDESC(0, 0, 0), // Null
+  [1] = SEGDESC(0, 0xFFFFF, SEG_R|SEG_CODE|SEG_S|SEG_DPL(0)|SEG_P|SEG_D|SEG_G),
+  [2] = SEGDESC(0, 0, SEG_R|SEG_CODE|SEG_S|SEG_DPL(0)|SEG_P|SEG_L|SEG_D|SEG_G),
+  [3] = SEGDESC(0, 0xFFFFF, SEG_W|SEG_S|SEG_DPL(0)|SEG_P|SEG_D|SEG_G),
+  // The order of the user data and user code segments is
+  // important for syscall instructions.  See initseg.
+  [6] = SEGDESC(0, 0, SEG_W|SEG_S|SEG_DPL(DPL_USER)|SEG_P|SEG_D|SEG_G),
+  [7] = SEGDESC(0, 0xFFFFF, SEG_R|SEG_S|SEG_DPL(DPL_USER)|SEG_P|SEG_L|SEG_D|SEG_G),
+};
 
 // Return the address of the PTE in page table pml4 
 // that corresponds to virtual address va.  If alloc!=0,
@@ -136,14 +156,14 @@ kvminit()
   vmmap(pml4, DEVSPACE, DEVSPACE, DEVSPACETOP-DEVSPACE, PSE_W|PSE_XD);
 
   // map kernel text executable and read-only.
-  vmmap(pml4, KERNBASE, KERNBASE, (uint64)etext-KERNBASE, 0);
+  vmmap(pml4, KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PSE_R|PSE_X);
 
   // map kernel data and the physical RAM we'll make use of.
   vmmap(pml4, (uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PSE_W|PSE_XD);
 
   // map the trampoline for trap entry/exit to
   // the highest virtual address in the kernel.
-  // mappages(pml4, TRAMPOLINE, (uint64)trampoline, PGSIZE, PSE_R | PSE_X);
+  vmmap(pml4, TRAMPOLINE, (uint64)trampoline, PGSIZE, PSE_R|PSE_X);
 
   return pml4;
 }
@@ -162,6 +182,35 @@ kpaginginit()
 {
   kernel_pml4 = kvminit();
   loadkpml4();
+}
+
+// Set up CPU's kernel segment descriptors.
+// Run once on entry on each CPU.
+void
+seginit(void)
+{
+  struct cpu *c;
+  struct desctr dtr;
+
+  c = mycpu();
+  memmove(c->gdt, bootgdt, sizeof bootgdt);
+  dtr.limit = sizeof(c->gdt)-1;
+  dtr.base = (uint64) c->gdt;
+  lgdt((void *)&dtr.limit);
+
+  // When executing a syscall instruction the CPU sets the SS selector
+  // to (star >> 32) + 8 and the CS selector to (star >> 32).
+  // When executing a sysret instruction the CPU sets the SS selector
+  // to (star >> 48) + 8 and the CS selector to (star >> 48) + 16.
+  uint64 star = ((((uint64)UCSEG|0x3)- 16)<<48)|((uint64)(KCSEG)<<32);
+  writemsr(MSR_STAR, star);
+  writemsr(MSR_LSTAR, (uint64)&sysentry);
+  writemsr(MSR_SFMASK, FL_TF | FL_IF);
+
+    // Initialize cpu-local storage.
+  writegs(KDSEG);
+  writemsr(MSR_GS_BASE, (uint64)c);
+  writemsr(MSR_GS_KERNBASE, (uint64)c);
 }
 
 // Copy from kernel to user.

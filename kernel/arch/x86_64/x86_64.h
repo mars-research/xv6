@@ -66,18 +66,9 @@ stosl(void *addr, int data, int cnt)
 struct segdesc;
 
 static inline void
-lgdt(struct segdesc *p, int size)
+lgdt(void *p)
 {
-  volatile ushort pd[5];
-  uintp addr = (uintp)p;
-
-  pd[0] = size-1;
-  pd[1] = (uint64)addr;
-  pd[2] = (uint64)addr >> 16;
-  pd[3] = (uint64)addr >> 32;
-  pd[4] = (uint64)addr >> 48;
-
-  asm volatile("lgdt (%0)" : : "r" (pd));
+  asm volatile("lgdt (%0)" : : "r" (p));
 }
 
 static inline void
@@ -149,6 +140,12 @@ static inline void
 lcr3(uintp val) 
 {
   asm volatile("mov %0,%%cr3" : : "r" (val));
+}
+
+static inline void
+writegs(uint16 v)
+{
+  __asm volatile("movw %0, %%gs" : : "r" (v));
 }
 
 //PAGEBREAK: 36

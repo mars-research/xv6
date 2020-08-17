@@ -14,7 +14,6 @@ OBJS = \
   $K/fs.o \
   $K/pipe.o \
   $K/arch/$(ARCH)/entry.o \
-  $K/arch/$(ARCH)/setup.o \
   $K/arch/$(ARCH)/lapic.o \
   $K/arch/$(ARCH)/uart.o \
   $K/arch/$(ARCH)/spinlock.o \
