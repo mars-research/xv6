@@ -18,7 +18,9 @@ main()
     printf("\n");
     kinit();
     kpaginginit();
+    seginit();
     procinit();
+    trapinit();
     printf("done\n");
     while (1);
   }

@@ -113,6 +113,7 @@ int             either_copyin(void*, int, uint64, uint64);
 int             either_copyout(int, uint64, void*, uint64);
 
 // arch/$ARCH/vm.c
+void            seginit(void);
 void            kvmmap(uint64, uint64, uint64, uint64);
 void            kpaginginit(void);
 void            loadkpml4(void);
