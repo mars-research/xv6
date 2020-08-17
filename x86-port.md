@@ -62,3 +62,9 @@ To review
    the stack pointer as `struct context*`
    Should we adopt this method as well? Do we not do this because we have to save the
    instruction pointer and the only (easy) way to do it is as a return address?
+
+To do
+-----
+
+-- consider renaming `pml4e_t` to something generic like `pte_t` OR replace 
+   all `pml4e_t *`s with `pagetable_t`
