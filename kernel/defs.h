@@ -121,6 +121,10 @@ typedef uint64  pagetablee_t; // this is a hack; TODO: fix it
 int             copyout(pagetablee_t*, uint64, char*, uint64);
 int             copyin(pagetablee_t*, char*, uint64, uint64);
 int             copyinstr(pagetablee_t*, char*, uint64, uint64);
+pagetablee_t*   kvmcreate(void);
+void            vmmap(pagetablee_t*, uint64, uint64, uint64, uint64);
+void            uvmunmap(pagetablee_t*, uint64, uint64, int);
+void            vmfree(pagetablee_t*, uint64);
 
 // arch/$ARCH/ioapic.c
 void            ioapicenable(int, int);

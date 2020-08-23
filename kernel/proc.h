@@ -29,7 +29,7 @@ struct proc {
   // these are private to the process, so lock need not be held
   uint64 kstack;               // Bottom of kernel stack for this process, must be first entry
   uint64 sz;                   // Size of process memory (bytes)
-  pagetable_t *pagetable;               // Page table
+  pagetable_t *pagetable;      // Page table
   struct trapframe *tf;        // Trap frame for current syscall
   struct context *context;     // swtch() here to run process
   struct file *ofile[NOFILE];  // Open files

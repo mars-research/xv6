@@ -17,6 +17,7 @@ int nextpid = 1;
 struct spinlock pid_lock;
 
 void swtch(struct context **old, struct context *new);
+extern uint64 trampoline[]; // see trampoline.S
 
 // Must be called with interrupts disabled
 int
@@ -185,3 +186,38 @@ either_copyin(void *dst, int user_src, uint64 src, uint64 len)
     return 0;
   }
 }
+
+// Create a page table for a given process,
+// with no user pages, but with trampoline pages.
+pml4e_t *
+proc_pagetable(struct proc *p)
+{
+  pml4e_t *pml4;
+
+  // A pagetable with only kernel mapping
+  pml4 = kvmcreate();
+
+  // map the trampoline code (for system call return)
+  // at the highest user virtual address.
+  // only the supervisor uses it, on the way
+  // to/from user space, so not PTE_U.
+  vmmap(pml4, TRAMPOLINE, PGSIZE,
+           (uint64)trampoline, PSE_R|PSE_X);
+
+  // map the trapframe just below TRAMPOLINE, for trampoline.S.
+  vmmap(pml4, TRAPFRAME, PGSIZE,
+           (uint64)(p->tf), PSE_R|PSE_W);
+
+  return pml4;
+}
+
+// Free a process's page table, and free the
+// physical memory it refers to.
+void
+proc_freepagetable(pml4e_t *pml4, uint64 sz)
+{
+  uvmunmap(pml4, TRAMPOLINE, PGSIZE, 0);
+  uvmunmap(pml4, TRAPFRAME, PGSIZE, 0);
+  vmfree(pml4, sz);
+}
+

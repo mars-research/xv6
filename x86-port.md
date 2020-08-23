@@ -63,8 +63,15 @@ To review
    Should we adopt this method as well? Do we not do this because we have to save the
    instruction pointer and the only (easy) way to do it is as a return address?
 
+-- `PTE_R`, `PTE_W`, etc. have been renamed to `PSE_R`, `PSE_W`, etc. It
+   stands for Paging Structure Entry. Should we retain this?
+
 To do
 -----
 
 -- consider renaming `pml4e_t` to something generic like `pte_t` OR replace 
    all `pml4e_t *`s with `pagetable_t`
+-- `kvminit` must be renamed. It creates and returns a page table with kernel
+   memory mapped. `kvmcreate` is likely a better suited name.
+-- using PSE and pse (paging structure entry) instead of PTE and pte was a
+   bad idea. Change it back.

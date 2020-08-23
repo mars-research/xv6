@@ -14,6 +14,26 @@
 #define KERNBASE 0x80000000L
 #define PHYSTOP (KERNBASE + 128*1024*1024)
 
+// map the trampoline page to the highest address,
+// in both user and kernel space.
+#define MAXVA (1L<<(9 + 9 + 9 + 9 + 12))
+#define TRAMPOLINE (MAXVA - PGSIZE)
+
+// map kernel stacks beneath the trampoline,
+// each surrounded by invalid guard pages.
+#define KSTACK(p) (TRAMPOLINE - ((p)+1)* 2*PGSIZE)
+
+// User memory layout.
+// Address zero first:
+//   text
+//   original data and bss
+//   fixed-size stack
+//   expandable heap
+//   ...
+//   TRAPFRAME (p->tf, used by the trampoline)
+//   TRAMPOLINE (the same page as in the kernel)
+#define TRAPFRAME (TRAMPOLINE - PGSIZE)
+
 // TODO: Move definitions to a different file
 #define PGSIZE 4096 // bytes per page
 #define PGSHIFT 12  // bits of offset within a page

@@ -155,15 +155,6 @@ struct segdesc {
 #define DEVSPACE 0xFE000000         // Other devices are top of 32-bit address space
 #define DEVSPACETOP 0x100000000
 
-// map the trampoline page to the highest address,
-// in both user and kernel space.
-#define MAXVA (1L<<(9 + 9 + 9 + 9 + 12))
-#define TRAMPOLINE (MAXVA - PGSIZE)
-
-// map kernel stacks beneath the trampoline,
-// each surrounded by invalid guard pages.
-#define KSTACK(p) (TRAMPOLINE - ((p)+1)* 2*PGSIZE)
-
 // System segment type bits
 #define SEG_LDT    (2<<0)      /* local descriptor table */
 #define SEG_TSS64A (9<<0)      /* available 64-bit TSS */
@@ -189,10 +180,6 @@ struct segdesc {
 
 // construct virtual address from indexes and offset
 #define PGADDR(d, t, o) ((uintp)((d) << PDXSHIFT | (t) << PTXSHIFT | (o)))
-
-// Address in page table or page directory entry
-#define PTE_ADDR(pte)   ((uintp)(pte) & ~0xFFF)
-#define PTE_FLAGS(pte)  ((uintp)(pte) &  0xFFF)
 
 // Inter-convert paging structure entry and physical addr.
 #define PA2PSE(pa)  ((uint64)(pa) & 0x000FFFFFFFFFF000)

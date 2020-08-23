@@ -143,7 +143,7 @@ vmmap(pml4e_t *pml4, uint64 va, uint64 pa, uint64 sz, uint64 perm)
  * the page allocator is already initialized.
  */
 pml4e_t *
-kvminit()
+kvmcreate()
 {
   pml4e_t *pml4 = (pml4e_t*) kalloc();
   memset(pml4, 0, PGSIZE);
@@ -180,7 +180,7 @@ loadkpml4()
 void
 kpaginginit()
 {
-  kernel_pml4 = kvminit();
+  kernel_pml4 = kvmcreate();
   loadkpml4();
 }
 
@@ -207,7 +207,7 @@ seginit(void)
   writemsr(MSR_LSTAR, (uint64)&sysentry);
   writemsr(MSR_SFMASK, FL_TF | FL_IF);
 
-    // Initialize cpu-local storage.
+  // Initialize cpu-local storage.
   writegs(KDSEG);
   writemsr(MSR_GS_BASE, (uint64)c);
   writemsr(MSR_GS_KERNBASE, (uint64)c);
@@ -304,4 +304,109 @@ copyinstr(pml4e_t *pml4, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+// Remove mappings from a page table. The mappings in
+// the given range must exist. Optionally free the
+// physical memory.
+void
+uvmunmap(pml4e_t *pml4, uint64 va, uint64 size, int do_free)
+{
+  uint64 a, last;
+  pte_t *pte;
+  uint64 pa;
+
+  a = PGROUNDDOWN(va);
+  last = PGROUNDDOWN(va + size - 1);
+  for(;;){
+    if((pte = walk(pml4, a, 0)) == 0)
+      panic("uvmunmap: walk");
+    if((*pte & PSE_P) == 0){
+      printf("va=%p pte=%p\n", a, *pte);
+      panic("uvmunmap: not mapped");
+    }
+    if(do_free){
+      pa = PSE2PA(*pte);
+      kfree((void*)pa);
+    }
+    *pte = 0;
+    if(a == last)
+      break;
+    a += PGSIZE;
+    pa += PGSIZE;
+  }
+}
+
+// Deallocate user pages to bring the process size from oldsz to
+// newsz.  oldsz and newsz need not be page-aligned, nor does newsz
+// need to be less than oldsz.  oldsz can be larger than the actual
+// process size.  Returns the new process size.
+uint64
+uvmdealloc(pml4e_t *pml4, uint64 oldsz, uint64 newsz)
+{
+  if(newsz >= oldsz)
+    return oldsz;
+
+  uint64 newup = PGROUNDUP(newsz);
+  if(newup < PGROUNDUP(oldsz))
+    uvmunmap(pml4, newup, oldsz - newup, 1);
+
+  return newsz;
+}
+
+// Allocate PTEs and physical memory to grow process from oldsz to
+// newsz, which need not be page aligned.  Returns new size or 0 on error.
+uint64
+uvmalloc(pml4e_t *pml4, uint64 oldsz, uint64 newsz)
+{
+  char *mem;
+  uint64 a;
+
+  if(newsz < oldsz)
+    return oldsz;
+
+  oldsz = PGROUNDUP(oldsz);
+  a = oldsz;
+  for(; a < newsz; a += PGSIZE){
+    mem = kalloc();
+    if(mem == 0){
+      uvmdealloc(pml4, a, oldsz);
+      return 0;
+    }
+    memset(mem, 0, PGSIZE);
+    if(mappages(pml4, a, PGSIZE, (uint64)mem, PSE_W|PSE_U) != 0){
+      kfree(mem);
+      uvmdealloc(pml4, a, oldsz);
+      return 0;
+    }
+  }
+  return newsz;
+}
+
+// walk table at given level, and recursively free
+// page-table pages.
+static void
+freewalk(pte_t *table, int level) {
+  if (level < 1 || level > 4)
+    panic("freewalktable");
+
+  if (level > 1) { // PML4, PDPT, or PDT
+    // every table has 512 entries
+    for (int i = 0; i < 512; i++) {
+      pte_t pte = table[i];
+      if (pte & PSE_P)
+        freewalk((pte_t*)PSE2PA(pte), level-1);
+    }
+  }
+
+  kfree((void*)table);
+}
+
+// Free user memory pages,
+// then free page-table pages.
+void
+vmfree(pml4e_t *pml4, uint64 sz)
+{
+  uvmunmap(pml4, 0, sz, 1);
+  freewalk(pml4, /*level*/ 4);
 }
