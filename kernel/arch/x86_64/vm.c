@@ -349,7 +349,7 @@ uvmdealloc(pml4e_t *pml4, uint64 oldsz, uint64 newsz)
 
   uint64 newup = PGROUNDUP(newsz);
   if(newup < PGROUNDUP(oldsz))
-    uvmunmap(pml4, newup, oldsz - newup, 1);
+    uvmunmap(pml4, SZ2UVA(newup), oldsz - newup, 1);
 
   return newsz;
 }
@@ -374,7 +374,7 @@ uvmalloc(pml4e_t *pml4, uint64 oldsz, uint64 newsz)
       return 0;
     }
     memset(mem, 0, PGSIZE);
-    if(mappages(pml4, a, PGSIZE, (uint64)mem, PSE_W|PSE_U) != 0){
+    if(mappages(pml4, SZ2UVA(a), PGSIZE, (uint64)mem, PSE_W|PSE_U) != 0){
       kfree(mem);
       uvmdealloc(pml4, a, oldsz);
       return 0;
@@ -383,20 +383,41 @@ uvmalloc(pml4e_t *pml4, uint64 oldsz, uint64 newsz)
   return newsz;
 }
 
+// mark a PTE invalid for user access.
+// used by exec for the user stack guard page.
+void
+uvmclear(pagetablee_t *pagetable, uint64 sz)
+{
+  pte_t *pte;
+
+  pte = walk(pagetable, SZ2UVA(sz), 0);
+  if(pte == 0)
+    panic("uvmclear");
+  *pte &= ~PSE_U;
+}
+
+static inline void
+freeleaf(void *page) {
+  kfree(page);
+}
+
 // walk table at given level, and recursively free
 // page-table pages.
 static void
 freewalk(pte_t *table, int level) {
-  if (level < 1 || level > 4)
+  if (level < 0 || level > 4)
     panic("freewalktable");
 
-  if (level > 1) { // PML4, PDPT, or PDT
-    // every table has 512 entries
-    for (int i = 0; i < 512; i++) {
-      pte_t pte = table[i];
-      if (pte & PSE_P)
-        freewalk((pte_t*)PSE2PA(pte), level-1);
-    }
+  if (level == 0) { // leaf page, not a table
+    freeleaf((void*)table);
+    return;
+  }
+
+  // every table has 512 entries
+  for (int i = 0; i < 512; i++) {
+    pte_t pte = table[i];
+    if (pte & PSE_P)
+      freewalk((pte_t*)PSE2PA(pte), level-1);
   }
 
   kfree((void*)table);
@@ -405,8 +426,43 @@ freewalk(pte_t *table, int level) {
 // Free user memory pages,
 // then free page-table pages.
 void
-vmfree(pml4e_t *pml4, uint64 sz)
+vmfree(pml4e_t *pml4)
 {
-  uvmunmap(pml4, 0, sz, 1);
   freewalk(pml4, /*level*/ 4);
+}
+
+// Given a parent process's page table, copy
+// its memory into a child's page table.
+// Copies both the page table and the
+// physical memory.
+// returns 0 on success, -1 on failure.
+// frees any allocated pages on failure.
+int
+uvmcopy(pml4e_t *old, pml4e_t *new, uint64 sz)
+{
+  pte_t *pte;
+  uint64 pa, i;
+  uint flags;
+  char *mem;
+
+  for(i = 0; i < sz; i += PGSIZE){
+    if((pte = walk(old, SZ2UVA(i), 0)) == 0)
+      panic("uvmcopy: pte should exist");
+    if((*pte & PSE_P) == 0)
+      panic("uvmcopy: page not present");
+    pa = PSE2PA(*pte);
+    flags = PSE_FLAGS(*pte);
+    if((mem = kalloc()) == 0)
+      goto err;
+    memmove(mem, (char*)pa, PGSIZE);
+    if(mappages(new, SZ2UVA(i), PGSIZE, (uint64)mem, flags) != 0){
+      kfree(mem);
+      goto err;
+    }
+  }
+  return 0;
+
+ err:
+  uvmunmap(new, SZ2UVA(0), i, 1);
+  return -1;
 }

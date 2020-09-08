@@ -174,11 +174,11 @@ struct trapframe {
   uint64 trapno;
   uint64 err;
 
-  uint64 eip;     // rip
+  uint64 rip;     // rip
   uint64 cs;
-  uint64 eflags;  // rflags
-  uint64 esp;     // rsp
-  uint64 ds;      // ss
+  uint64 rflags;  // rflags
+  uint64 rsp;     // rsp
+  uint64 ss;      // ss
 };
 
 // Per-CPU state

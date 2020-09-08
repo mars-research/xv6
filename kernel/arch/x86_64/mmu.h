@@ -62,6 +62,7 @@
  * entry iff IA32_EFER.NXE == 1. MUST be 0 otherwise. */
 #define PSE_XD      (1L<<63)         // XD;  1: execution disabled
 #define PSE_X       (0L<<63)         // XD;  0: execution not disabled
+#define PSE_FLAGS(pte) ((pte) & (PSE_P|PSE_W|PSE_R|PSE_U|PSE_PS|PSE_XD|PSE_X)) 
 
 #define SEG_KCODE 1  // kernel code
 #define SEG_KDATA 2  // kernel data+stack
@@ -184,6 +185,14 @@ struct segdesc {
 // Inter-convert paging structure entry and physical addr.
 #define PA2PSE(pa)  ((uint64)(pa) & 0x000FFFFFFFFFF000)
 #define PSE2PA(pse) ((((int64)(pse)<<16)>>16) & ~0xFFF) // zero out top 16 bits
+
+// Since xv6 uses a 1:1 mapping approach and many address spaces
+// between 0 and 1 MB have special meaning in Intel's architecture,
+// all user programs are linked starting at 1 MB
+#define USERBASE (1<<20)
+#define SZ2UVA(sz)   (sz+USERBASE)
+#define UVA2SZ(sz)   (sz-USERBASE)
+
 
 typedef uint64 pml4e_t;
 typedef uint64 pdpte_t;

@@ -34,9 +34,9 @@ alltraps:
 1:mov  %rsp, %rdi  # frame in arg1
   // call trap
 
-# Return falls through to trapret...
-.globl trapret
-trapret:
+# Return falls through to usertrapret...
+.globl usertrapret
+usertrapret:
   cli
   cmpw $KCSEG, 32(%rsp)  # compare to saved cs
   jz 1f
@@ -71,13 +71,13 @@ sysentry:  # Build trap frame.
   movq  %rsp, %gs:8  // user sp
   movq  %gs:16, %rax  // proc entry
   
-  movq  %ss:0(%rax), %rax // load kstack from proc
+  movq  %ss:0(%rax), %rax // load kstack (first entry) from proc
   addq  $(STACKSIZE), %rax
 
   movq  %rax, %rsp   // set rsp to top of kernel stack
   movq  %gs:0, %rax  // restore rax
 
-  // push stack segment (0) and usp
+  // push stack segment (0) and user sp
   push $0
   push %gs:8
   // safe eflags and eip
@@ -110,7 +110,7 @@ sysentry:  # Build trap frame.
   // call trap
 #PAGEBREAK!
 
-# Return falls through to trapret...
+# Return falls through to usertrapret...
 .globl sysexit
 sysexit:
   # to make sure we don't get any interrupts on the user stack while in

@@ -1,24 +1,24 @@
-#include "types.h"
-#include "param.h"
-#include "memlayout.h"
-#include "riscv.h"
-#include "spinlock.h"
-#include "proc.h"
-#include "defs.h"
-#include "elf.h"
+#include "x86_64.h"
+#include "../../types.h"
+#include "../../param.h"
+#include "../../memlayout.h"
+#include "../../spinlock.h"
+#include "../../proc.h"
+#include "../../defs.h"
+#include "../../elf.h"
 
-static int loadseg(pde_t *pgdir, uint64 addr, struct inode *ip, uint offset, uint sz);
+static int loadseg(pagetablee_t *pagetable, uint64 va, struct inode *ip, uint offset, uint sz);
 
 int
 exec(char *path, char **argv)
 {
   char *s, *last;
   int i, off;
-  uint64 argc, sz, sp, ustack[MAXARG+1], stackbase;
+  uint64 argc, sz, sp, ustack[MAXARG+1+1], stackbase;
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
-  pagetable_t pagetable = 0, oldpagetable;
+  pagetablee_t *pagetable = 0, *oldpagetable;
   struct proc *p = myproc();
 
   begin_op();
@@ -49,9 +49,11 @@ exec(char *path, char **argv)
       goto bad;
     if(ph.vaddr + ph.memsz < ph.vaddr)
       goto bad;
-    if((sz = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz)) == 0)
+    if(ph.vaddr < SZ2UVA(0))
       goto bad;
     if(ph.vaddr % PGSIZE != 0)
+      goto bad;
+    if((sz = uvmalloc(pagetable, sz, UVA2SZ(ph.vaddr) + ph.memsz)) == 0)
       goto bad;
     if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
       goto bad;
@@ -61,7 +63,6 @@ exec(char *path, char **argv)
   ip = 0;
 
   p = myproc();
-  uint64 oldsz = p->sz;
 
   // Allocate two pages at the next page boundary.
   // Use the second as the user stack.
@@ -69,7 +70,7 @@ exec(char *path, char **argv)
   if((sz = uvmalloc(pagetable, sz, sz + 2*PGSIZE)) == 0)
     goto bad;
   uvmclear(pagetable, sz-2*PGSIZE);
-  sp = sz;
+  sp = SZ2UVA(sz);
   stackbase = sp - PGSIZE;
 
   // Push argument strings, prepare rest of stack in ustack.
@@ -77,27 +78,30 @@ exec(char *path, char **argv)
     if(argc >= MAXARG)
       goto bad;
     sp -= strlen(argv[argc]) + 1;
-    sp -= sp % 16; // riscv sp must be 16-byte aligned
+    sp -= sp % 16; // data should be 16-byte aligned for fast access
     if(sp < stackbase)
       goto bad;
     if(copyout(pagetable, sp, argv[argc], strlen(argv[argc]) + 1) < 0)
       goto bad;
-    ustack[argc] = sp;
+    ustack[1+argc] = sp;
   }
-  ustack[argc] = 0;
+  ustack[1+argc] = 0; // null terminator for argv
+  ustack[0] = (0L-1); // fake return address for user main
 
   // push the array of argv[] pointers.
-  sp -= (argc+1) * sizeof(uint64);
-  sp -= sp % 16;
+  sp -= (argc+1+1) * sizeof(uint64);
+  // we want ustack[1] (argv) to be 16-byte aligned. Therefore,
+  // sp needs to be 8 bytes off
+  if ((sp % 16) == 0) // 16-byte aligned?
+    sp -= 8;
   if(sp < stackbase)
     goto bad;
-  if(copyout(pagetable, sp, (char *)ustack, (argc+1)*sizeof(uint64)) < 0)
+  if(copyout(pagetable, sp, (char *)ustack, (argc+1+1)*sizeof(uint64)) < 0)
     goto bad;
 
   // arguments to user main(argc, argv)
-  // argc is returned via the system call return
-  // value, which goes in a0.
-  p->tf->a1 = sp;
+  p->tf->rdi = argc;
+  p->tf->rsi = sp + 8; // argv
 
   // Save program name for debugging.
   for(last=s=path; *s; s++)
@@ -109,14 +113,14 @@ exec(char *path, char **argv)
   oldpagetable = p->pagetable;
   p->pagetable = pagetable;
   p->sz = sz;
-  p->tf->epc = elf.entry;  // initial program counter = main
-  p->tf->sp = sp; // initial stack pointer
-  proc_freepagetable(oldpagetable, oldsz);
-  return argc; // this ends up in a0, the first argument to main(argc, argv)
+  p->tf->rip = elf.entry;  // initial program counter = main
+  p->tf->rsp = sp; // initial stack pointer
+  proc_freepagetable(oldpagetable);
+  return argc;
 
  bad:
   if(pagetable)
-    proc_freepagetable(pagetable, sz);
+    proc_freepagetable(pagetable);
   if(ip){
     iunlockput(ip);
     end_op();
@@ -129,7 +133,7 @@ exec(char *path, char **argv)
 // and the pages from va to va+sz must already be mapped.
 // Returns 0 on success, -1 on failure.
 static int
-loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz)
+loadseg(pagetablee_t *pagetable, uint64 va, struct inode *ip, uint offset, uint sz)
 {
   uint i, n;
   uint64 pa;

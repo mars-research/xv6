@@ -1,5 +1,4 @@
 #include "types.h"
-#include "riscv.h"
 #include "defs.h"
 #include "date.h"
 #include "param.h"
@@ -7,6 +6,7 @@
 #include "spinlock.h"
 #include "proc.h"
 
+/*
 uint64
 sys_exit(void)
 {
@@ -16,6 +16,7 @@ sys_exit(void)
   exit(n);
   return 0;  // not reached
 }
+*/
 
 uint64
 sys_getpid(void)
@@ -29,6 +30,7 @@ sys_fork(void)
   return fork();
 }
 
+/*
 uint64
 sys_wait(void)
 {
@@ -95,3 +97,4 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+*/

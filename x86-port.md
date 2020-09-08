@@ -75,3 +75,4 @@ To do
    memory mapped. `kvmcreate` is likely a better suited name.
 -- using PSE and pse (paging structure entry) instead of PTE and pte was a
    bad idea. Change it back.
+-- vm.c:`mappages` can and probably should be static

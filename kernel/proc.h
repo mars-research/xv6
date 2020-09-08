@@ -16,6 +16,8 @@ enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
 struct proc {
+  // kstack needs to be the first entry; see trampoline.S:sysentry
+  uint64 kstack;               // Bottom of kernel stack for this process, must be first entry
   struct spinlock lock;
 
   // p->lock must be held whenusing these:
@@ -27,7 +29,7 @@ struct proc {
   int xstate;                  // Exit status to be returned to parent's wait
 
   // these are private to the process, so lock need not be held
-  uint64 kstack;               // Bottom of kernel stack for this process, must be first entry
+  // uint64 kstack;            // Bottom of kernel stack for this process, must be first entry
   uint64 sz;                   // Size of process memory (bytes)
   pagetable_t *pagetable;      // Page table
   struct trapframe *tf;        // Trap frame for current syscall

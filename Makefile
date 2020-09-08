@@ -13,6 +13,8 @@ OBJS = \
   $K/file.o \
   $K/fs.o \
   $K/pipe.o \
+  $K/sysfile.o \
+  $K/sysproc.o \
   $K/arch/$(ARCH)/entry.o \
   $K/arch/$(ARCH)/lapic.o \
   $K/arch/$(ARCH)/uart.o \
@@ -28,6 +30,7 @@ OBJS = \
   $K/arch/$(ARCH)/ioapic.o \
   $K/arch/$(ARCH)/picirq.o \
   $K/arch/$(ARCH)/ide.o \
+  $K/arch/$(ARCH)/exec.o \
 
 ifeq ($(ARCH),x86_64)
 # $(info [INFO]: x86_64; including vectors.o to OBJS)

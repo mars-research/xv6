@@ -109,22 +109,32 @@ void            procinit(void);
 void            sched(void);
 void            sleep(void*, struct spinlock*);
 void            wakeup(void*);
+int             fork(void);
 int             either_copyin(void*, int, uint64, uint64);
 int             either_copyout(int, uint64, void*, uint64);
+typedef uint64  pagetablee_t; // this is a hack; TODO: fix it
+pagetablee_t*   proc_pagetable(struct proc*);
+void            proc_freepagetable(pagetablee_t*);
 
 // arch/$ARCH/vm.c
 void            seginit(void);
 void            kvmmap(uint64, uint64, uint64, uint64);
 void            kpaginginit(void);
 void            loadkpml4(void);
-typedef uint64  pagetablee_t; // this is a hack; TODO: fix it
+uint64          walkaddr(pagetablee_t*, uint64);
 int             copyout(pagetablee_t*, uint64, char*, uint64);
 int             copyin(pagetablee_t*, char*, uint64, uint64);
 int             copyinstr(pagetablee_t*, char*, uint64, uint64);
 pagetablee_t*   kvmcreate(void);
+uint64          uvmalloc(pagetablee_t*, uint64, uint64);
 void            vmmap(pagetablee_t*, uint64, uint64, uint64, uint64);
 void            uvmunmap(pagetablee_t*, uint64, uint64, int);
-void            vmfree(pagetablee_t*, uint64);
+void            uvmclear(pagetablee_t*, uint64);
+int             uvmcopy(pagetablee_t*, pagetablee_t*, uint64);
+void            vmfree(pagetablee_t*);
+
+// arch/$ARCH/exec.c
+int             exec(char*, char**);
 
 // arch/$ARCH/ioapic.c
 void            ioapicenable(int, int);
