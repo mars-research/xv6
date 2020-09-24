@@ -6,7 +6,6 @@
 #include "spinlock.h"
 #include "proc.h"
 
-/*
 uint64
 sys_exit(void)
 {
@@ -16,7 +15,6 @@ sys_exit(void)
   exit(n);
   return 0;  // not reached
 }
-*/
 
 uint64
 sys_getpid(void)
@@ -30,7 +28,6 @@ sys_fork(void)
   return fork();
 }
 
-/*
 uint64
 sys_wait(void)
 {
@@ -40,6 +37,7 @@ sys_wait(void)
   return wait(p);
 }
 
+/*
 uint64
 sys_sbrk(void)
 {
