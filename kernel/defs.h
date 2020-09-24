@@ -117,6 +117,7 @@ pagetablee_t*   proc_pagetable(struct proc*);
 void            proc_freepagetable(pagetablee_t*);
 void            exit(int);
 int             wait(uint64);
+int             kill(int);
 
 // arch/$ARCH/vm.c
 void            seginit(void);
