@@ -33,6 +33,9 @@ void            printfinit(void);
 
 // console.c
 void            consputc(int);
+int             consolewrite(int, uint64, int);
+int             consoleread(int, uint64, int);
+void            consoleintr(int);
 
 // kalloc.c
 void            kinit(void);
@@ -115,6 +118,7 @@ int             either_copyout(int, uint64, void*, uint64);
 typedef uint64  pagetablee_t; // this is a hack; TODO: fix it
 pagetablee_t*   proc_pagetable(struct proc*);
 void            proc_freepagetable(pagetablee_t*);
+void            procdump(void);
 void            exit(int);
 int             wait(uint64);
 int             kill(int);

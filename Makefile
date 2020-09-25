@@ -31,6 +31,7 @@ OBJS = \
   $K/arch/$(ARCH)/picirq.o \
   $K/arch/$(ARCH)/ide.o \
   $K/arch/$(ARCH)/exec.o \
+  $K/arch/$(ARCH)/kbd.o \
 
 ifeq ($(ARCH),x86_64)
 # $(info [INFO]: x86_64; including vectors.o to OBJS)
