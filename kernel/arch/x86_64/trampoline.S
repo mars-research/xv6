@@ -32,7 +32,7 @@ alltraps:
   swapgs
   
 1:mov  %rsp, %rdi  # frame in arg1
-  // call trap
+  call trap
 
 # Return falls through to usertrapret...
 .globl usertrapret

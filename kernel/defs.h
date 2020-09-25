@@ -123,6 +123,7 @@ void            exit(int);
 int             wait(uint64);
 int             kill(int);
 int             growproc(int);
+void            yield(void);
 
 // arch/$ARCH/vm.c
 void            seginit(void);
@@ -153,6 +154,7 @@ void            ioapicinit(void);
 void            diskinit(void);
 void            diskintr(void);
 void            diskrw(struct buf *, int);
+void            ideintr(void);
 
 // arch/$ARCH/pipe.c
 int             pipealloc(struct file**, struct file**);
@@ -163,6 +165,12 @@ int             pipewrite(struct pipe*, uint64, int);
 // arch/$ARCH/trap.c
 void            idtinit(void);
 void            trapinit(void);
+
+// arch/$ARCH/lapic.c
+void            lapiceoi(void);
+
+// arch/$ARCH/kbd.c
+void            kbdintr(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

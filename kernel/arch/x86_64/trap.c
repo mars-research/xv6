@@ -43,18 +43,14 @@ trap(struct trapframe *tf)
 {
   if(tf->trapno == T_SYSCALL){
     if(myproc()->killed)
-      /* TODO: uncomment */
-      panic("commented exit();");
+      exit(-1);
     myproc()->tf = tf;
-    /* TODO: uncomment */
     syscall();
     if(myproc()->killed)
-      /* TODO: uncoment */
-      panic("commented exit();");
+      exit(-1);
     return;
   }
 
-  /* TODO: uncomment
   switch(tf->trapno){
   case T_IRQ0 + IRQ_TIMER:
     if(cpuid() == 0){
@@ -82,7 +78,7 @@ trap(struct trapframe *tf)
     break;
   case T_IRQ0 + 7:
   case T_IRQ0 + IRQ_SPURIOUS:
-    cprintf("cpu%d: spurious interrupt at %x:%x\n",
+    printf("cpu%d: spurious interrupt at %x:%x\n",
             cpuid(), tf->cs, tf->rip);
     lapiceoi();
     break;
@@ -91,12 +87,12 @@ trap(struct trapframe *tf)
   default:
     if(myproc() == 0 || (tf->cs&3) == 0){
       // In kernel, it must be our mistake.
-      cprintf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\n",
+      printf("unexpected trap %d from cpu %d eip %x (cr2=0x%x)\n",
               tf->trapno, cpuid(), tf->rip, rcr2());
       panic("trap");
     }
     // In user space, assume process misbehaved.
-    cprintf("pid %d %s: trap %d err %d on cpu %d "
+    printf("pid %d %s: trap %d err %d on cpu %d "
             "eip 0x%x addr 0x%x--kill proc\n",
             myproc()->pid, myproc()->name, tf->trapno,
             tf->err, cpuid(), tf->rip, rcr2());
@@ -107,7 +103,7 @@ trap(struct trapframe *tf)
   // (If it is still executing in the kernel, let it keep running
   // until it gets to the regular system call return.)
   if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER)
-    exit();
+    exit(-1);
 
   // Force process to give up CPU on clock tick.
   // If interrupts were on while locks held, would need to check nlock.
@@ -117,6 +113,5 @@ trap(struct trapframe *tf)
   
   // Check if the process has been killed since we yielded
   if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER)
-    exit();
-    */
+    exit(-1);
 }
