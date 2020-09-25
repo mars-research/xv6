@@ -12,6 +12,10 @@ struct inode;
 struct stat;
 struct pipe;
 
+// extern variables
+extern struct spinlock tickslock;
+extern uint ticks;
+
 // string.c
 int             memcmp(const void*, const void*, uint);
 void*           memmove(void*, const void*, uint);
