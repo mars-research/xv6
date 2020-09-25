@@ -118,6 +118,7 @@ void            proc_freepagetable(pagetablee_t*);
 void            exit(int);
 int             wait(uint64);
 int             kill(int);
+int             growproc(int);
 
 // arch/$ARCH/vm.c
 void            seginit(void);
@@ -130,6 +131,7 @@ int             copyin(pagetablee_t*, char*, uint64, uint64);
 int             copyinstr(pagetablee_t*, char*, uint64, uint64);
 pagetablee_t*   kvmcreate(void);
 uint64          uvmalloc(pagetablee_t*, uint64, uint64);
+uint64          uvmdealloc(pagetablee_t*, uint64, uint64);
 void            vmmap(pagetablee_t*, uint64, uint64, uint64, uint64);
 void            uvmunmap(pagetablee_t*, uint64, uint64, int);
 void            uvmclear(pagetablee_t*, uint64);

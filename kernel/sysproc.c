@@ -37,7 +37,6 @@ sys_wait(void)
   return wait(p);
 }
 
-/*
 uint64
 sys_sbrk(void)
 {
@@ -52,6 +51,7 @@ sys_sbrk(void)
   return addr;
 }
 
+/*
 uint64
 sys_sleep(void)
 {
