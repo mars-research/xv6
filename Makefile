@@ -1,5 +1,6 @@
 K=kernel
 U=user
+ULINK=0x100000 # 1 MB
 ARCH=x86_64
 
 OBJS = \
@@ -47,7 +48,8 @@ LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
 
-CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb
+CFLAGS = -Wall -Werror -fno-omit-frame-pointer -ggdb
+CFLAGS += -O
 CFLAGS += -D$(ARCH)
 CFLAGS += -MD
 CFLAGS += -mcmodel=large
@@ -73,11 +75,11 @@ $K/kernel: $(OBJS) $K/kernel.ld # $U/initcode
 $K/arch/$(ARCH)/vectors.S: $K/arch/$(ARCH)/vectors.pl
 	./$K/arch/$(ARCH)/vectors.pl > $K/arch/$(ARCH)/vectors.S
 
-$U/initcode: $U/initcode.S
-	$(CC) $(CFLAGS) -nostdinc -I. -Ikernel -c $U/initcode.S -o $U/initcode.o
-	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o $U/initcode.out $U/initcode.o
-	$(OBJCOPY) -S -O binary $U/initcode.out $U/initcode
-	$(OBJDUMP) -S $U/initcode.o > $U/initcode.asm
+$U/arch/$(ARCH)/initcode: $U/arch/$(ARCH)/initcode.S
+	$(CC) $(CFLAGS) -nostdinc -I. -Ikernel -c $U/arch/$(ARCH)/initcode.S -o $U/arch/$(ARCH)/initcode.o
+	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o $U/arch/$(ARCH)/initcode.out $U/arch/$(ARCH)/initcode.o
+	$(OBJCOPY) -S -O binary $U/arch/$(ARCH)/initcode.out $U/arch/$(ARCH)/initcode
+	$(OBJDUMP) -S $U/arch/$(ARCH)/initcode.o > $U/arch/$(ARCH)/initcode.asm
 
 tags: $(OBJS) _init
 	etags *.S *.c
@@ -148,7 +150,8 @@ xv6.img: $K/kernel $K/bootblock
 clean: 
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*/*.o */*.d */*.asm */*.sym \
-	$U/initcode $U/initcode.out $K/kernel fs.img \
+	$U/arch/$(ARCH)/initcode $U/arch/$(ARCH)/initcode.out $K/kernel fs.img \
+	$U/arch/$(ARCH)/initcode.asm \
 	mkfs/mkfs \
         $U/usys.S \
 	$(UPROGS) \

@@ -5,7 +5,7 @@
 #include "mmu.h"
 #include "msr.h"
 
-pml4e_t *kernel_pml4; // kernel pml4, used by scheduler and bootstrap
+pml4e_t *bootstrap_pml4; // kernel pml4, used by scheduler and bootstrap
 
 extern char etext[];  // kernel.ld sets this to end of kernel code.
 extern uint64 trampoline[]; // see trampoline.S
@@ -125,7 +125,7 @@ mappages(pml4e_t *pml4, uint64 va, uint64 size, uint64 pa, uint64 perm)
 void
 kvmmap(uint64 va, uint64 pa, uint64 sz, uint64 perm)
 {
-  if(mappages(kernel_pml4, va, sz, pa, perm) != 0)
+  if(mappages(bootstrap_pml4, va, sz, pa, perm) != 0)
     panic("kvmmap");
 }
 
@@ -168,11 +168,11 @@ kvmcreate()
   return pml4;
 }
 
-// load kernel_pml4 into the hardware page table register
+// load bootstrap_pml4 into the hardware page table register
 void
-loadkpml4()
+loadpml4(pml4e_t* pml4)
 {
-  lcr3((uint64) kernel_pml4);
+  lcr3((uint64) pml4);
 }
 
 // Sets up a kernel page table and switches to it.
@@ -180,8 +180,8 @@ loadkpml4()
 void
 kpaginginit()
 {
-  kernel_pml4 = kvmcreate();
-  loadkpml4();
+  bootstrap_pml4 = kvmcreate();
+  loadpml4(bootstrap_pml4);
 }
 
 // Set up CPU's kernel segment descriptors.
@@ -354,6 +354,22 @@ uvmdealloc(pml4e_t *pml4, uint64 oldsz, uint64 newsz)
   return newsz;
 }
 
+// Load the user initcode into address 0 of pagetable,
+// for the very first process.
+// sz must be less than a page.
+void
+uvminit(pml4e_t *pml4, uchar *src, uint sz)
+{
+  char *mem;
+
+  if(sz >= PGSIZE)
+    panic("inituvm: more than a page");
+  mem = kalloc();
+  memset(mem, 0, PGSIZE);
+  mappages(pml4, USERBASE, PGSIZE, (uint64)mem, PSE_W|PSE_R|PSE_X|PSE_U);
+  memmove(mem, src, sz);
+}
+
 // Allocate PTEs and physical memory to grow process from oldsz to
 // newsz, which need not be page aligned.  Returns new size or 0 on error.
 uint64
@@ -405,19 +421,17 @@ freeleaf(void *page) {
 // page-table pages.
 static void
 freewalk(pte_t *table, int level) {
-  if (level < 0 || level > 4)
+  if (level < 1 || level > 4)
     panic("freewalktable");
 
-  if (level == 0) { // leaf page, not a table
-    freeleaf((void*)table);
-    return;
-  }
-
-  // every table has 512 entries
-  for (int i = 0; i < 512; i++) {
-    pte_t pte = table[i];
-    if (pte & PSE_P)
-      freewalk((pte_t*)PSE2PA(pte), level-1);
+  // only need to recurse if at level 2 (PDPT) and above
+  if (level > 1) {
+    // every table has 512 entries
+    for (int i = 0; i < 512; i++) {
+      pte_t pte = table[i];
+      if (pte & PSE_P)
+        freewalk((pte_t*)PSE2PA(pte), level-1);
+    }
   }
 
   kfree((void*)table);
@@ -426,8 +440,9 @@ freewalk(pte_t *table, int level) {
 // Free user memory pages,
 // then free page-table pages.
 void
-vmfree(pml4e_t *pml4)
+vmfree(pml4e_t *pml4, uint64 sz)
 {
+  uvmunmap(pml4, USERBASE, sz, /* do_free */ 1);
   freewalk(pml4, /*level*/ 4);
 }
 

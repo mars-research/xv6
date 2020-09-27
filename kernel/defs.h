@@ -36,6 +36,7 @@ void            panic(char*) __attribute__((noreturn));
 void            printfinit(void);
 
 // console.c
+void            consoleinit(void);
 void            consputc(int);
 int             consolewrite(int, uint64, int);
 int             consoleread(int, uint64, int);
@@ -60,6 +61,7 @@ void            releasesleep(struct sleeplock*);
 int             holdingsleep(struct sleeplock*);
 
 // bio.c
+void            binit(void);
 struct buf*     bread(uint, uint);
 void            bwrite(struct buf*);
 void            brelse(struct buf*);
@@ -73,21 +75,21 @@ void            begin_op();
 void            end_op();
 
 // file.c
+void            fileinit(void);
 struct file*    filealloc(void);
 void            fileclose(struct file*);
 struct file*    filedup(struct file*);
-void            fileinit(void);
 int             fileread(struct file*, uint64, int n);
 int             filestat(struct file*, uint64 addr);
 int             filewrite(struct file*, uint64, int n);
 
 // fs.c
 void            fsinit(int);
+void            iinit();
 int             dirlink(struct inode*, char*, uint);
 struct inode*   dirlookup(struct inode*, char*, uint*);
 struct inode*   ialloc(uint, short);
 struct inode*   idup(struct inode*);
-void            iinit();
 void            ilock(struct inode*);
 void            iput(struct inode*);
 void            iunlock(struct inode*);
@@ -109,10 +111,12 @@ int             fetchaddr(uint64, uint64*);
 void            syscall();
 
 // arch/$ARCH/proc.c
+void            procinit(void);
+void            userinit(void);
 int             cpuid(void);
 struct cpu*     mycpu(void);
 struct proc*    myproc(void);
-void            procinit(void);
+void            scheduler(void);
 void            sched(void);
 void            sleep(void*, struct spinlock*);
 void            wakeup(void*);
@@ -121,7 +125,7 @@ int             either_copyin(void*, int, uint64, uint64);
 int             either_copyout(int, uint64, void*, uint64);
 typedef uint64  pagetablee_t; // this is a hack; TODO: fix it
 pagetablee_t*   proc_pagetable(struct proc*);
-void            proc_freepagetable(pagetablee_t*);
+void            proc_freepagetable(pagetablee_t*, uint64);
 void            procdump(void);
 void            exit(int);
 int             wait(uint64);
@@ -133,19 +137,20 @@ void            yield(void);
 void            seginit(void);
 void            kvmmap(uint64, uint64, uint64, uint64);
 void            kpaginginit(void);
-void            loadkpml4(void);
+void            loadpml4(pagetablee_t*);
 uint64          walkaddr(pagetablee_t*, uint64);
 int             copyout(pagetablee_t*, uint64, char*, uint64);
 int             copyin(pagetablee_t*, char*, uint64, uint64);
 int             copyinstr(pagetablee_t*, char*, uint64, uint64);
 pagetablee_t*   kvmcreate(void);
+void            uvminit(pagetablee_t*, uchar*, uint);
 uint64          uvmalloc(pagetablee_t*, uint64, uint64);
 uint64          uvmdealloc(pagetablee_t*, uint64, uint64);
 void            vmmap(pagetablee_t*, uint64, uint64, uint64, uint64);
 void            uvmunmap(pagetablee_t*, uint64, uint64, int);
 void            uvmclear(pagetablee_t*, uint64);
 int             uvmcopy(pagetablee_t*, pagetablee_t*, uint64);
-void            vmfree(pagetablee_t*);
+void            vmfree(pagetablee_t*, uint64);
 
 // arch/$ARCH/exec.c
 int             exec(char*, char**);
@@ -153,6 +158,16 @@ int             exec(char*, char**);
 // arch/$ARCH/ioapic.c
 void            ioapicenable(int, int);
 void            ioapicinit(void);
+
+// arch/$ARCH/lapic.c
+void            lapicinit(void);
+void            lapiceoi(void);
+
+// arch/$ARCH/picirq.c
+void            picinit(void);
+
+// arch/$ARCH/kbd.c
+void            kbdintr(void);
 
 // arch/$ARCH/ide.c
 void            diskinit(void);
@@ -169,12 +184,6 @@ int             pipewrite(struct pipe*, uint64, int);
 // arch/$ARCH/trap.c
 void            idtinit(void);
 void            trapinit(void);
-
-// arch/$ARCH/lapic.c
-void            lapiceoi(void);
-
-// arch/$ARCH/kbd.c
-void            kbdintr(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

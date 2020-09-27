@@ -6,16 +6,16 @@
 # exec(init, argv)
 .globl start
 start:
-        la a0, init
-        la a1, argv
-        li a7, SYS_exec
-        ecall
+  mov $init,      %rdi
+  mov $argv,      %rsi
+  mov $SYS_exec,  %rax
+  syscall
 
-# for(;;) exit();
+# for(;;) exit(-1);
 exit:
-        li a7, SYS_exit
-        ecall
-        jal exit
+  mov $(-1),     %edi
+  mov $SYS_exit, %rax
+  syscall
 
 # char init[] = "/init\0";
 init:
@@ -24,5 +24,5 @@ init:
 # char *argv[] = { init, 0 };
 .p2align 2
 argv:
-  .long init
-  .long 0
+  .quad init # pointers are 64 bits long
+  .quad 0

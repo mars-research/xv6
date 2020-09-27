@@ -14,7 +14,7 @@ exec(char *path, char **argv)
 {
   char *s, *last;
   int i, off;
-  uint64 argc, sz, sp, ustack[MAXARG+1+1], stackbase;
+  uint64 argc, sz, oldsz, sp, ustack[MAXARG+1+1], stackbase;
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
@@ -63,6 +63,7 @@ exec(char *path, char **argv)
   ip = 0;
 
   p = myproc();
+  oldsz = p->sz;
 
   // Allocate two pages at the next page boundary.
   // Use the second as the user stack.
@@ -115,12 +116,12 @@ exec(char *path, char **argv)
   p->sz = sz;
   p->tf->rip = elf.entry;  // initial program counter = main
   p->tf->rsp = sp; // initial stack pointer
-  proc_freepagetable(oldpagetable);
+  proc_freepagetable(oldpagetable, oldsz);
   return argc;
 
  bad:
   if(pagetable)
-    proc_freepagetable(pagetable);
+    proc_freepagetable(pagetable, sz);
   if(ip){
     iunlockput(ip);
     end_op();

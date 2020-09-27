@@ -16,10 +16,12 @@ struct proc *initproc;
 int nextpid = 1;
 struct spinlock pid_lock;
 
+pte_t* walk(pml4e_t*, uint64, int);
 void swtch(struct context **old, struct context *new);
 void sysexit(void);
-extern uint64 trampoline[]; // see trampoline.S
 void forkret(void); // forward declaration
+
+extern uint64 trampoline[]; // see trampoline.S
 
 // Must be called with interrupts disabled
 int
@@ -55,18 +57,7 @@ procinit(void)
   initlock(&pid_lock, "nextpid");
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
-
-      // Allocate a page for the process's kernel stack.
-      // Map it high in memory, followed by an invalid
-      // guard page.
-      char *pa = kalloc();
-      if(pa == 0)
-        panic("kalloc");
-      uint64 va = KSTACK((int) (p - proc));
-      kvmmap(va, (uint64)pa, PGSIZE, PSE_W);
-      p->kstack = va;
   }
-  loadkpml4();
 }
 
 // Return the current struct proc *, or zero if none.
@@ -80,6 +71,43 @@ myproc(void)
   popcli();
 
   return p;
+}
+
+// Per-CPU process scheduler.
+// Each CPU calls scheduler() after setting itself up.
+// Scheduler never returns.  It loops, doing:
+//  - choose a process to run.
+//  - swtch to start running that process.
+//  - eventually that process transfers control
+//    via swtch back to the scheduler.
+void
+scheduler(void)
+{
+  struct proc *p;
+  struct cpu *c = mycpu();
+  
+  c->proc = 0;
+  for(;;){
+    // Avoid deadlock by ensuring that devices can interrupt.
+    sti();
+
+    for(p = proc; p < &proc[NPROC]; p++) {
+      acquire(&p->lock);
+      if(p->state == RUNNABLE) {
+        // Switch to chosen process.  It is the process's job
+        // to release its lock and then reacquire it
+        // before jumping back to us.
+        p->state = RUNNING;
+        c->proc = p;
+        swtch(&c->scheduler, p->context);
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      release(&p->lock);
+    }
+  }
 }
 
 // Switch to scheduler.  Must hold only p->lock
@@ -211,9 +239,9 @@ proc_pagetable(struct proc *p)
   // A pagetable with only kernel mapping
   pml4 = kvmcreate();
 
+  // TODO: either use a separate page for trap frame or remove code
   // map the trapframe just below TRAMPOLINE, for trampoline.S.
-  vmmap(pml4, TRAPFRAME, PGSIZE,
-           (uint64)(p->tf), PSE_R|PSE_W);
+  // vmmap(pml4, TRAPFRAME, (uint64)(p->tf), PGSIZE, PSE_R|PSE_W);
 
   return pml4;
 }
@@ -221,10 +249,11 @@ proc_pagetable(struct proc *p)
 // Free a process's page table, and free the
 // physical memory it refers to.
 void
-proc_freepagetable(pml4e_t *pml4)
+proc_freepagetable(pml4e_t *pml4, uint64 sz)
 {
-  uvmunmap(pml4, TRAPFRAME, PGSIZE, 0);
-  vmfree(pml4);
+  // TODO: see proc_pagetable()
+  // uvmunmap(pml4, TRAPFRAME, PGSIZE, 0);
+  vmfree(pml4, sz);
 }
 
 int
@@ -266,10 +295,36 @@ found:
   // A new page table with only kernel mapping.
   p->pagetable = proc_pagetable(p);
 
+  // allocate a kernel stack
+  char *pa = kalloc();
+  if(pa == 0){
+    proc_freepagetable(p->pagetable, p->sz);
+    release(&p->lock);
+    panic("allocproc: out of memory");
+  }
+  uint64 va = KSTACK((int) (p - proc));
+  vmmap(p->pagetable, va, (uint64)pa, PGSIZE, PSE_W);
+  p->kstack = (uint64) pa;
+
+  // TODO: FIX THIS
+  // here's the problem: every process has its own page table, with kernel
+  // and user space mappings. Every process's kernel stack is mapped at a
+  // high address in memory with an implicit guard page. While we're setting
+  // up a new process (such as in userinit and fork), we want to write data
+  // to another process's kernel stack. allocproc() needs to do so here, and
+  // the calling functions will do additional writing later. We cannot
+  // simply map another process's kernel stack into our pagetable because
+  // we cannot reliably access our pagetable without making major changes
+  // (when userinit calls allocproc, myproc() will not have been set up to
+  // return the current process). So, we perform the setup using physical
+  // addresses, and then the caller functions 'patch' members such as
+  // p->tf and p->context with virtual addresses.
+
   // set up trap frame at the top of the kernel stack
   sp = (char*)p->kstack + PGSIZE;
   sp -= sizeof(*(p->tf));
   p->tf = (struct trapframe*)sp;
+  memset(p->tf, 0, sizeof *(p->tf));
 
   // Set up new context to start executing at forkret,
   // which returns to sysexit, which then returns to userspace
@@ -291,9 +346,15 @@ found:
 static void
 freeproc(struct proc *p)
 {
+  uint64 pa;
   p->tf = 0;
-  if(p->pagetable)
-    proc_freepagetable(p->pagetable);
+  if(p->pagetable) {
+    // free kernel stack
+    pa = PSE2PA(walk(p->pagetable, p->kstack, 0));
+    if (pa)
+      kfree((char*)pa);
+    proc_freepagetable(p->pagetable, p->sz);
+  }
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -366,6 +427,14 @@ fork(void)
 
   np->state = RUNNABLE;
 
+  // allocproc uses physical addresses for p->kstack, p->tf, and p->context
+  // patch them to higher virtual addresses
+  uint64 offset = KSTACK((int) (p - proc)) - p->kstack;
+  p->kstack  += offset;
+  p->tf      += offset;
+  p->context += offset;
+
+  // allocproc returns p with p->lock held; release it
   release(&np->lock);
 
   return pid;
@@ -598,5 +667,62 @@ yield(void)
   acquire(&p->lock);
   p->state = RUNNABLE;
   sched();
+  release(&p->lock);
+}
+
+// user/arch/$ARCH/initcode.S;
+// a user program that calls exec("/init")
+// to generate:
+// $ od -t xC -v -w4 initcode
+uchar initcode[] = {
+  0x48, 0xc7, 0xc7, 0x25,
+  0x00, 0x00, 0x00, 0x48,
+  0xc7, 0xc6, 0x2c, 0x00,
+  0x00, 0x00, 0x48, 0xc7,
+  0xc0, 0x07, 0x00, 0x00,
+  0x00, 0x0f, 0x05, 0xbf,
+  0xff, 0xff, 0xff, 0xff,
+  0x48, 0xc7, 0xc0, 0x02,
+  0x00, 0x00, 0x00, 0x0f,
+  0x05, 0x2f, 0x69, 0x6e,
+  0x69, 0x74, 0x00, 0x00,
+  0x25, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00,
+};
+
+// Set up first user process.
+void
+userinit(void)
+{
+  struct proc *p;
+
+  p = allocproc();
+  initproc = p;
+  
+  // allocate one user page and copy init's instructions
+  // and data into it.
+  uvminit(p->pagetable, initcode, sizeof(initcode));
+  p->sz = PGSIZE;
+
+  // prepare for the very first "return" from kernel to user.
+  p->tf->rcx = 0;                  // user rip is read from rcx, on sysret
+  p->tf->rsp = USERBASE + PGSIZE;  // user stack pointer
+  p->tf->r11 = FL_IF;              // user RFLAGS
+
+  safestrcpy(p->name, "initcode", sizeof(p->name));
+  p->cwd = namei("/");
+
+  p->state = RUNNABLE;
+
+  // allocproc uses physical addresses for p->kstack, p->tf, and p->context
+  // patch them to higher virtual addresses
+  uint64 offset = KSTACK((int) (p - proc)) - p->kstack;
+  p->kstack  += offset;
+  p->tf      += offset;
+  p->context += offset;
+
+  // allocproc returns p with p->lock held; release it
   release(&p->lock);
 }

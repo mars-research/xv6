@@ -16,7 +16,11 @@
 
 // map the trampoline page to the highest address,
 // in both user and kernel space.
-#define MAXVA (1L<<(9 + 9 + 9 + 9 + 12))
+// MAXVA is actually half of what is allowed;
+// this is because x86_64 requires bits 63:48 to be
+// the same as bit 47, and we don't want to sign extend
+// higher addresses
+#define MAXVA (1L<<(9 + 9 + 9 + 9 + 12 - 1))
 #define TRAMPOLINE (MAXVA - PGSIZE)
 
 // map kernel stacks beneath the trampoline,

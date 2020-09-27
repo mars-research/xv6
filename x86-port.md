@@ -69,10 +69,13 @@ To review
 To do
 -----
 
+-- kernel stack setup for new processes is VERY messy
+-- get rid of `kernel_pml4`. It is irrelevant with ever process owning
+   its own pagetable/pml4.
 -- consider renaming `pml4e_t` to something generic like `pte_t` OR replace 
    all `pml4e_t *`s with `pagetable_t`
--- `kvminit` must be renamed. It creates and returns a page table with kernel
-   memory mapped. `kvmcreate` is likely a better suited name.
 -- using PSE and pse (paging structure entry) instead of PTE and pte was a
    bad idea. Change it back.
+-- `kvminit` must be renamed. It creates and returns a page table with kernel
+   memory mapped. `kvmcreate` is likely a better suited name.
 -- vm.c:`mappages` can and probably should be static
