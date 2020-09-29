@@ -107,7 +107,7 @@ sysentry:  # Build trap frame.
 
   mov  %rsp, %rdi  # frame in arg1
 
-  // call trap
+  call trap
 #PAGEBREAK!
 
 # Return falls through to usertrapret...
