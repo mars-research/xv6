@@ -7,6 +7,7 @@
 #include "../../defs.h"
 #include "../../elf.h"
 
+pte_t* walk(pml4e_t *pagetable, uint64 va, int alloc); 
 static int loadseg(pagetablee_t *pagetable, uint64 va, struct inode *ip, uint offset, uint sz);
 
 int
@@ -14,12 +15,12 @@ exec(char *path, char **argv)
 {
   char *s, *last;
   int i, off;
-  uint64 argc, sz, oldsz, sp, ustack[MAXARG+1+1], stackbase;
+  uint64 argc, sz, oldsz, sp, ustack[MAXARG+1+1], stackbase, kstackpa;
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
   pagetablee_t *pagetable = 0, *oldpagetable;
-  struct proc *p = myproc();
+  struct proc *p;
 
   begin_op();
 
@@ -35,6 +36,7 @@ exec(char *path, char **argv)
   if(elf.magic != ELF_MAGIC)
     goto bad;
 
+  p = myproc();
   if((pagetable = proc_pagetable(p)) == 0)
     goto bad;
 
@@ -62,7 +64,6 @@ exec(char *path, char **argv)
   end_op();
   ip = 0;
 
-  p = myproc();
   oldsz = p->sz;
 
   // Allocate two pages at the next page boundary.
@@ -110,12 +111,19 @@ exec(char *path, char **argv)
       last = s+1;
   safestrcpy(p->name, last, sizeof(p->name));
     
+  // map kernel stack in the new pagetable
+  kstackpa = PSE2PA(*walk(p->pagetable, p->kstack, 0));
+  vmmap(pagetable, p->kstack, kstackpa, PGSIZE, PSE_R|PSE_W);
+
   // Commit to the user image.
   oldpagetable = p->pagetable;
   p->pagetable = pagetable;
   p->sz = sz;
   p->tf->rip = elf.entry;  // initial program counter = main
-  p->tf->rsp = sp; // initial stack pointer
+  p->tf->rcx = elf.entry;  // sysexit loads rip from rcx
+  p->tf->rsp = sp;         // initial stack pointer
+  switchuvm(p);
+
   proc_freepagetable(oldpagetable, oldsz);
   return argc;
 
