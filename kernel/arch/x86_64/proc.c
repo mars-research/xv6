@@ -21,6 +21,7 @@ void swtch(struct context **old, struct context *new);
 void sysexit(void);
 void forkret(void); // forward declaration
 
+extern pml4e_t *bootstrap_pml4;
 extern uint64 trampoline[]; // see trampoline.S
 
 // Must be called with interrupts disabled
@@ -99,8 +100,11 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
+        switchuvm(p);
+        
         swtch(&c->scheduler, p->context);
 
+        loadpml4(bootstrap_pml4);
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;
@@ -427,12 +431,12 @@ fork(void)
 
   np->state = RUNNABLE;
 
-  // allocproc uses physical addresses for p->kstack, p->tf, and p->context
+  // allocproc uses physical addresses for np->kstack, np->tf, and np->context
   // patch them to higher virtual addresses
-  uint64 offset = KSTACK((int) (p - proc)) - p->kstack;
-  p->kstack  += offset;
-  p->tf      += offset;
-  p->context += offset;
+  uint64 offset = KSTACK((int) (np - proc)) - np->kstack;
+  np->kstack  += offset;
+  np->tf = (struct trapframe*)((uint64)np->tf + offset);
+  np->context = (struct context*)((uint64)np->context + offset);
 
   // allocproc returns p with p->lock held; release it
   release(&np->lock);
@@ -675,10 +679,12 @@ yield(void)
 // to generate:
 // $ od -t xC -v -w4 initcode
 uchar initcode[] = {
-  0x48, 0xc7, 0xc7, 0x25,
-  0x00, 0x00, 0x00, 0x48,
-  0xc7, 0xc6, 0x2c, 0x00,
-  0x00, 0x00, 0x48, 0xc7,
+  0x48, 0xc7, 0xc7, 0x2d,
+  0x00, 0x10, 0x00, 0x48,
+  0xc7, 0xc6, 0x34, 0x00,
+  0x10, 0x00, 0x48, 0x83,
+  0xc7, 0x00, 0x48, 0x83,
+  0xc6, 0x00, 0x48, 0xc7,
   0xc0, 0x07, 0x00, 0x00,
   0x00, 0x0f, 0x05, 0xbf,
   0xff, 0xff, 0xff, 0xff,
@@ -686,7 +692,7 @@ uchar initcode[] = {
   0x00, 0x00, 0x00, 0x0f,
   0x05, 0x2f, 0x69, 0x6e,
   0x69, 0x74, 0x00, 0x00,
-  0x25, 0x00, 0x00, 0x00,
+  0x2d, 0x00, 0x10, 0x00,
   0x00, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00,
@@ -707,7 +713,7 @@ userinit(void)
   p->sz = PGSIZE;
 
   // prepare for the very first "return" from kernel to user.
-  p->tf->rcx = 0;                  // user rip is read from rcx, on sysret
+  p->tf->rcx = USERBASE;           // user rip is read from rcx, on sysret
   p->tf->rsp = USERBASE + PGSIZE;  // user stack pointer
   p->tf->r11 = FL_IF;              // user RFLAGS
 
@@ -720,8 +726,8 @@ userinit(void)
   // patch them to higher virtual addresses
   uint64 offset = KSTACK((int) (p - proc)) - p->kstack;
   p->kstack  += offset;
-  p->tf      += offset;
-  p->context += offset;
+  p->tf = (struct trapframe*)((uint64)p->tf + offset);
+  p->context = (struct context*)((uint64)p->context + offset);
 
   // allocproc returns p with p->lock held; release it
   release(&p->lock);
