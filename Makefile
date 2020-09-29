@@ -49,7 +49,7 @@ OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
 
 CFLAGS = -Wall -Werror -fno-omit-frame-pointer -ggdb
-CFLAGS += -O
+# CFLAGS += -O
 CFLAGS += -D$(ARCH)
 CFLAGS += -MD
 CFLAGS += -mcmodel=large
@@ -77,7 +77,7 @@ $K/arch/$(ARCH)/vectors.S: $K/arch/$(ARCH)/vectors.pl
 
 $U/arch/$(ARCH)/initcode: $U/arch/$(ARCH)/initcode.S
 	$(CC) $(CFLAGS) -nostdinc -I. -Ikernel -c $U/arch/$(ARCH)/initcode.S -o $U/arch/$(ARCH)/initcode.o
-	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o $U/arch/$(ARCH)/initcode.out $U/arch/$(ARCH)/initcode.o
+	$(LD) $(LDFLAGS) -N -e start -Ttext $(ULINK) -o $U/arch/$(ARCH)/initcode.out $U/arch/$(ARCH)/initcode.o
 	$(OBJCOPY) -S -O binary $U/arch/$(ARCH)/initcode.out $U/arch/$(ARCH)/initcode
 	$(OBJDUMP) -S $U/arch/$(ARCH)/initcode.o > $U/arch/$(ARCH)/initcode.asm
 
@@ -87,7 +87,7 @@ tags: $(OBJS) _init
 ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o
 
 _%: %.o $(ULIB)
-	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
+	$(LD) $(LDFLAGS) -N -e main -Ttext $(ULINK) -o $@ $^
 	$(OBJDUMP) -S $@ > $*.asm
 	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $*.sym
 
@@ -100,7 +100,7 @@ $U/usys.o : $U/usys.S
 $U/_forktest: $U/forktest.o $(ULIB)
 	# forktest has less library code linked in - needs to be small
 	# in order to be able to max out the proc table.
-	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o $U/_forktest $U/forktest.o $U/ulib.o $U/usys.o
+	$(LD) $(LDFLAGS) -N -e main -Ttext $(ULINK) -o $U/_forktest $U/forktest.o $U/ulib.o $U/usys.o
 	$(OBJDUMP) -S $U/_forktest > $U/forktest.asm
 
 mkfs/mkfs: mkfs/mkfs.c $K/fs.h
@@ -125,7 +125,9 @@ UPROGS=\
 	$U/_rm\
 	$U/_sh\
 	$U/_stressfs\
-	$U/_usertests\
+	$U/_wc\
+	$U/_zombie\
+	#$U/_usertests\
 	$U/_wc\
 	$U/_zombie\
 
@@ -172,17 +174,20 @@ endif
 
 QEMUGDB = -S -s
 QEMUEXTRA = -drive file=fs1.img,if=none,format=raw,id=x1 -device virtio-blk-device,drive=x1,bus=virtio-mmio-bus.1
-QEMUOPTS = -drive file=xv6.img,format=raw -m 3G -smp $(CPUS) -curses # -nographic
-QEMUOPTS += -serial file:serial.log
+QEMUOPTS = -drive file=xv6.img,format=raw -m 3G -smp $(CPUS) -nographic
+QEMUOPTS += -drive file=fs.img,index=1,media=disk,format=raw
+QEMUOPTS += -no-shutdown -no-reboot
+# QEMUOPTS += -d int
+# QEMUOPTS += -serial file:serial.log
 # QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-qemu: xv6.img # fs.img
+qemu: xv6.img fs.img
 	$(QEMU) $(QEMUOPTS)
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-qemu-gdb: xv6.img # .gdbinit fs.img
+qemu-gdb: xv6.img .gdbinit fs.img
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
