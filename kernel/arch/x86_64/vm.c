@@ -2,6 +2,7 @@
 #include "../../memlayout.h"
 #include "../../defs.h"
 #include "../../proc.h"
+#include "defs.h"
 #include "x86_64.h"
 #include "mmu.h"
 #include "msr.h"
