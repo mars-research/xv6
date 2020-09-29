@@ -354,7 +354,7 @@ freeproc(struct proc *p)
   p->tf = 0;
   if(p->pagetable) {
     // free kernel stack
-    pa = PSE2PA(walk(p->pagetable, p->kstack, 0));
+    pa = PSE2PA(*walk(p->pagetable, p->kstack, 0));
     if (pa)
       kfree((char*)pa);
     proc_freepagetable(p->pagetable, p->sz);
