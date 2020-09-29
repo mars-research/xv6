@@ -10,8 +10,8 @@ sub entry {
     my $name = shift;
     print ".global $name\n";
     print "${name}:\n";
-    print " li a7, SYS_${name}\n";
-    print " ecall\n";
+    print " mov \$SYS_${name}, %rax\n";
+    print " syscall\n";
     print " ret\n";
 }
 	
