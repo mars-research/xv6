@@ -12,7 +12,7 @@ int
 fetchaddr(uint64 addr, uint64 *ip)
 {
   struct proc *p = myproc();
-  if(addr >= p->sz || addr+sizeof(*ip) > p->sz)
+  if(addr >= SZ2UVA(p->sz) || addr+sizeof(*ip) > SZ2UVA(p->sz))
     return -1;
   if(copyin(p->pagetable, (char *)ip, addr, sizeof(*ip)) != 0)
     return -1;
