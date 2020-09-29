@@ -1,7 +1,6 @@
-// This file will be renamed to defs.h once the port is complete.
-
 // Definitions of platform independent APIs
 // (implementation could be platform dependent.)
+// TODO: some platform dependent defs creeped in. remove them.
 
 // forward declarations
 struct spinlock;
@@ -137,6 +136,7 @@ void            yield(void);
 void            seginit(void);
 void            kvmmap(uint64, uint64, uint64, uint64);
 void            kpaginginit(void);
+void            switchuvm(struct proc*);
 void            loadpml4(pagetablee_t*);
 uint64          walkaddr(pagetablee_t*, uint64);
 int             copyout(pagetablee_t*, uint64, char*, uint64);
@@ -184,6 +184,9 @@ int             pipewrite(struct pipe*, uint64, int);
 // arch/$ARCH/trap.c
 void            idtinit(void);
 void            trapinit(void);
+
+// arch/$ARCH/mp.c
+void            mpinit(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
