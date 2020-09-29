@@ -1,12 +1,14 @@
 #include "../../types.h"
 #include "../../memlayout.h"
 #include "../../defs.h"
+#include "../../proc.h"
 #include "x86_64.h"
 #include "mmu.h"
 #include "msr.h"
 
 pml4e_t *bootstrap_pml4; // kernel pml4, used by scheduler and bootstrap
 
+extern struct proc proc[];  // see proc.c
 extern char etext[];  // kernel.ld sets this to end of kernel code.
 extern uint64 trampoline[]; // see trampoline.S
 extern uint64 sysentry[];   // see trampoline.S
@@ -23,12 +25,12 @@ extern uint64 sysentry[];   // see trampoline.S
 struct segdesc bootgdt[NSEGS] = {
   [0] = SEGDESC(0, 0, 0), // Null
   [1] = SEGDESC(0, 0xFFFFF, SEG_R|SEG_CODE|SEG_S|SEG_DPL(0)|SEG_P|SEG_D|SEG_G),
-  [2] = SEGDESC(0, 0, SEG_R|SEG_CODE|SEG_S|SEG_DPL(0)|SEG_P|SEG_L|SEG_D|SEG_G),
+  [2] = SEGDESC(0, 0, SEG_R|SEG_CODE|SEG_S|SEG_DPL(0)|SEG_P|SEG_L|SEG_G),
   [3] = SEGDESC(0, 0xFFFFF, SEG_W|SEG_S|SEG_DPL(0)|SEG_P|SEG_D|SEG_G),
   // The order of the user data and user code segments is
   // important for syscall instructions.  See initseg.
-  [6] = SEGDESC(0, 0, SEG_W|SEG_S|SEG_DPL(DPL_USER)|SEG_P|SEG_D|SEG_G),
-  [7] = SEGDESC(0, 0xFFFFF, SEG_R|SEG_S|SEG_DPL(DPL_USER)|SEG_P|SEG_L|SEG_D|SEG_G),
+  [6] = SEGDESC(0, 0xFFFFF, SEG_W|SEG_S|SEG_DPL(DPL_USER)|SEG_P|SEG_D|SEG_G),
+  [7] = SEGDESC(0, 0x0, SEG_R|SEG_CODE|SEG_S|SEG_DPL(DPL_USER)|SEG_P|SEG_L|SEG_G),
 };
 
 // Return the address of the PTE in page table pml4 
@@ -64,7 +66,10 @@ walk(pml4e_t *pml4, uint64 va, int alloc)
       if (!alloc || (pgstr = (pse_t*)kalloc()) == 0)
         return 0;
       memset(pgstr, 0, PGSIZE);
-      *pse = PA2PSE(pgstr) | PSE_P;
+      // The permissions here are overly generous, but they can
+      // be further restricted by the permissions in the page table
+      // entries, if necessary.
+      *pse = PA2PSE(pgstr) | PSE_P|PSE_W|PSE_U;
     }
   }
 
@@ -159,7 +164,7 @@ kvmcreate()
   vmmap(pml4, KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PSE_R|PSE_X);
 
   // map kernel data and the physical RAM we'll make use of.
-  vmmap(pml4, (uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PSE_W|PSE_XD);
+  vmmap(pml4, (uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PSE_W|PSE_X);
 
   // map the trampoline for trap entry/exit to
   // the highest virtual address in the kernel.
@@ -173,6 +178,40 @@ void
 loadpml4(pml4e_t* pml4)
 {
   lcr3((uint64) pml4);
+}
+
+// Switch TSS and h/w page table to correspond to process p.
+void
+switchuvm(struct proc *p)
+{
+  struct desctr dtr;
+  struct cpu *c;
+  
+  if(p == 0)
+    panic("switchuvm: no process");
+  if(p->kstack == 0)
+    panic("switchuvm: no kstack");
+  if(p->pagetable == 0)
+    panic("switchuvm: no pgdir");
+
+  pushcli();
+
+  c = mycpu();
+  uint64 base = (uint64) &(c->ts);
+  c->gdt[TSSSEG>>3] =  SEGDESC(base, (sizeof(c->ts)-1), SEG_P|SEG_TSS64A);
+  c->gdt[(TSSSEG>>3)+1] = SEGDESCHI(base);
+  c->ts.rsp[0] = (uint64) KSTACK((int)(p - proc))+ PGSIZE;
+  c->ts.iomba = (ushort) 0xFFFF;
+
+  dtr.limit = sizeof(c->gdt) - 1;
+  dtr.base = (uint64)c->gdt;
+  lgdt((void *)&dtr.limit);
+
+  ltr(TSSSEG);
+
+  loadpml4(p->pagetable);// switch to process's address space
+
+  popcli();
 }
 
 // Sets up a kernel page table and switches to it.
