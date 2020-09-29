@@ -1,5 +1,5 @@
 // Definitions of functions specific to x86_64
-struct rtcdata;
+struct rtcdate;
 
 // lapic.c
 void            cmostime(struct rtcdate *r);
