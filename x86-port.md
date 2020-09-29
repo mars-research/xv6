@@ -69,6 +69,9 @@ To review
 To do
 -----
 
+-- `proc_pagetable` sets `p->kstack` which is VERY wrong. Fix it (by
+   possibly setting every process's kernel stack at a fixed high virtual
+   address).
 -- kernel stack setup for new processes is VERY messy
 -- get rid of `kernel_pml4`. It is irrelevant with ever process owning
    its own pagetable/pml4.
