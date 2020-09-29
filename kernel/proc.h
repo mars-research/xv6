@@ -2,6 +2,7 @@
 #define XV6_PROC_H_
 
 #include "types.h"
+#include "param.h"
 #include "spinlock.h"
 
 typedef 
