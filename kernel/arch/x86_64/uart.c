@@ -2,8 +2,9 @@
 
 #include "../../types.h"
 #include "../../date.h"
-#include "defs.h"
 #include "../../defs.h"
+#include "defs.h"
+#include "traps.h"
 #include "mmu.h"
 #include "x86_64.h"
 
@@ -37,7 +38,7 @@ uartinit(void)
   inb(COM1+2);
   inb(COM1+0);
   // TODO: uncomment below
-  // ioapicenable(IRQ_COM1, 0);
+  ioapicenable(IRQ_COM1, 0);
 
   // Announce that we're here.
   for(p="xv6...\n"; *p; p++)
