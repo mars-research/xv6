@@ -6,6 +6,10 @@
 #include "spinlock.h"
 #include "proc.h"
 
+// TODO: architecture specific preprocessor directive must be
+// removed
+#define SZ2UVA(x) (0x100000 + x)
+
 uint64
 sys_exit(void)
 {
@@ -45,7 +49,7 @@ sys_sbrk(void)
 
   if(argint(0, &n) < 0)
     return -1;
-  addr = myproc()->sz;
+  addr = SZ2UVA(myproc()->sz);
   if(growproc(n) < 0)
     return -1;
   return addr;
