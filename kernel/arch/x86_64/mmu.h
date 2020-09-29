@@ -129,6 +129,13 @@ struct segdesc {
 	(((bits)>>4)&0xf0) | ((limit>>16)&0xf), \
 	((base)>>24)&0xff, \
 }
+
+// SEGDESCHI constructs an extension segment descriptor
+// literal that records the high bits of base.
+#define SEGDESCHI(base) (struct segdesc) {                        \
+  (((base)>>32)&0xffff), (((base)>>48)&0xffff), \
+}
+
 #define SEG16(type, base, lim, dpl) (struct segdesc)  \
 { (lim) & 0xffff, (uintp)(base) & 0xffff,              \
   ((uintp)(base) >> 16) & 0xff, type, 1, dpl, 1,       \
@@ -185,7 +192,7 @@ struct segdesc {
 
 // Inter-convert paging structure entry and physical addr.
 #define PA2PSE(pa)  ((uint64)(pa) & 0x000FFFFFFFFFF000)
-#define PSE2PA(pse) ((((int64)(pse)<<16)>>16) & ~0xFFF) // zero out top 16 bits
+#define PSE2PA(pse) ((((uint64)(pse)<<16)>>16) & ~0xFFF) // zero out top 16 bits
 
 // Since xv6 uses a 1:1 mapping approach and many address spaces
 // between 0 and 1 MB have special meaning in Intel's architecture,
