@@ -152,6 +152,9 @@ iderw(struct buf *b, int write)
     ;
   *pp = b;
 
+  // mark b as being "owned" by the disk
+  b->disk = 1;
+
   // Start disk if necessary.
   if(idequeue == b)
     idestart(b);
