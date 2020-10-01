@@ -389,6 +389,19 @@ forkret(void)
   // returns to sysexit in trampoline.S; see allocproc()
 }
 
+// allocproc writes physical addresses to p->kstack, p->tf, and p->context
+// patch them to higher virtual addresses
+static void
+patchkstack(struct proc *p)
+{
+  uint64 offset = KSTACK((int) (p - proc)) - p->kstack;
+
+  p->kstack  += offset;
+  p->tf = (struct trapframe*)((uint64)p->tf + offset);
+  p->context = (struct context*)((uint64)p->context + offset);
+
+}
+
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
 int
@@ -433,10 +446,7 @@ fork(void)
 
   // allocproc uses physical addresses for np->kstack, np->tf, and np->context
   // patch them to higher virtual addresses
-  uint64 offset = KSTACK((int) (np - proc)) - np->kstack;
-  np->kstack  += offset;
-  np->tf = (struct trapframe*)((uint64)np->tf + offset);
-  np->context = (struct context*)((uint64)np->context + offset);
+  patchkstack(np);
 
   // allocproc returns p with p->lock held; release it
   release(&np->lock);
@@ -724,10 +734,7 @@ userinit(void)
 
   // allocproc uses physical addresses for p->kstack, p->tf, and p->context
   // patch them to higher virtual addresses
-  uint64 offset = KSTACK((int) (p - proc)) - p->kstack;
-  p->kstack  += offset;
-  p->tf = (struct trapframe*)((uint64)p->tf + offset);
-  p->context = (struct context*)((uint64)p->context + offset);
+  patchkstack(p);
 
   // allocproc returns p with p->lock held; release it
   release(&p->lock);
