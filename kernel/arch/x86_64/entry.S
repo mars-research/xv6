@@ -186,6 +186,27 @@ loadgdt:
 loadgdt32:
   ret
 
+.globl apstart
+apstart:
+  call  loadgdt
+
+# setup paging
+  call  enablepaging
+
+# enable 64-bit execution
+  ljmp  $KCSEG, $apstart64
+
+.code64
+apstart64:
+# load VA of stack
+  movq $0x7000-12, %rax
+  movq (%rax), %rsp
+# clear frame pointer for stack walks
+  xor   %rbp, %rbp
+# boot into C
+  call  apmain
+
+
 # data section
 .section .bss
 .align PGSIZE

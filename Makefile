@@ -67,10 +67,14 @@ endif
 
 LDFLAGS = -z max-page-size=4096
 
-$K/kernel: $(OBJS) $K/kernel.ld # $U/initcode
-	$(LD) $(LDFLAGS) -T $K/arch/$(ARCH)/kernel.ld -o $K/kernel $(OBJS) 
-	$(OBJDUMP) -S $K/kernel > $K/kernel.asm
-	$(OBJDUMP) -t $K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $K/kernel.sym
+$K/kernel: $(OBJS) $K/kernel.ld $K/arch/$(ARCH)/entryother# $U/initcode
+	$(LD) $(LDFLAGS) -T $K/arch/$(ARCH)/kernel.ld -o $K/kernel $(OBJS) -b binary entryother
+
+$K/arch/$(ARCH)/entryother: $K/arch/$(ARCH)/entryother.S
+	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c $K/arch/$(ARCH)/entryother.S
+	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7000 -o bootblockother.o entryother.o
+	$(OBJCOPY) -S -O binary -j .text bootblockother.o entryother
+	$(OBJDUMP) -S bootblockother.o > entryother.asm
  
 $K/arch/$(ARCH)/vectors.S: $K/arch/$(ARCH)/vectors.pl
 	./$K/arch/$(ARCH)/vectors.pl > $K/arch/$(ARCH)/vectors.S
@@ -169,7 +173,7 @@ clean:
 #	then echo "-gdb tcp::$(GDBPORT)"; \
 #	else echo "-s -p $(GDBPORT)"; fi)
 ifndef CPUS
-CPUS := 1
+CPUS := 2
 endif
 
 QEMUGDB = -S -s

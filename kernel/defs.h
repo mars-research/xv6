@@ -162,6 +162,7 @@ void            ioapicinit(void);
 // arch/$ARCH/lapic.c
 void            lapicinit(void);
 void            lapiceoi(void);
+void             lapicstartap(uchar apicid, uint addr);
 
 // arch/$ARCH/picirq.c
 void            picinit(void);
