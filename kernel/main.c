@@ -32,46 +32,50 @@ main()
   printf("done\n");
   scheduler();
 }
-// Other CPUs jump here from entryother.S.
+// Other CPUs jump here from apstart.
 void
 apmain(void)
 {
-  printf("cpu%d: starting %d\n", cpuid(), cpuid());
+  switchkvm();
   seginit();
   lapicinit();
   printf("cpu%d: starting %d\n", cpuid(), cpuid());
-  // load idt register
+  idtinit();
   xchg(&(mycpu()->started), 1); // tell startothers() we're up
+  printf("cpu%d: starting %d\n", cpuid(), cpuid());
   scheduler();     // start running processes
 }
 
 void apstart(void);
-
 static void startothers(void)
 {
   struct cpu *c;
   char *stack;
   extern uchar _binary_entryother_start[], _binary_entryother_size[];
-  memmove((void*)0x7000, _binary_entryother_start, (uint64)_binary_entryother_size);
+  memmove((void*)0x7000, _binary_entryother_start, (uint64)_binary_entryother_size); //load entryother binary to 0x7000
 
   for(c = cpus; c < cpus+ncpu; c++){
-    printf("cpu%d: searching %d\n", cpuid(), c->apicid);
+    printf("cpu%d: starting AP %d\n", cpuid(), c->apicid);
     if(c == mycpu())  // We've started already.
       continue;
 
-    // Tell entryother.S what stack to use, where to enter, and what
-    // pgdir to use. We cannot use kpgdir yet, because the AP processor
-    // is running in low  memory, so we use entrypgdir for the APs too.
-    printf("entryother addr 0x%p", _binary_entryother_start);
+    //set a pgentry mapping 0-2MB vm to 0-2MB physcial memory for ap booting
+    *(uint64*) 0x4000 = (uint64)0xe3;
+    *(uint64*) 0x2000 = (uint64)0x4023;
+
+    *(uint32*)(0x7000-4) = (uint32)((uint64)apstart & 0xffffffff); // store the address of apstart so aps can jmp to it.
+    
+    //start aps and set up 1 page of stack for them
     stack = kalloc();
-    *(uint32*)(0x7000-4) = (uint32)((uint64)apstart & 0xffffffff);
     *(uint64*)(0x7000-12) = (uint64) (stack);
     lapicstartap(c->apicid, (uint64)0x7000);
 
     // wait for cpu to finish mpmain()
     while(c->started == 0){
-      //printf("cpu%d: waiting %d\n", cpuid(), c->apicid);
-      ;
+      printf("-");
     }
+
   }
+
+  printf("out of startother loop");
 }

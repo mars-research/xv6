@@ -1,5 +1,5 @@
 /* Linker script for xv6 kernel */
-/*OUTPUT_FORMAT("elf64-x86-64", "elf64-x86-64") */
+OUTPUT_FORMAT("elf64-x86-64", "elf64-x86-64", "elf64-x86-64")
 /* OUTPUT_ARCH(x86_64) */
 ENTRY(_start)
 

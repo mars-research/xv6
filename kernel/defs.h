@@ -137,6 +137,7 @@ void            seginit(void);
 void            kvmmap(uint64, uint64, uint64, uint64);
 void            kpaginginit(void);
 void            switchuvm(struct proc*);
+void            switchkvm(void);
 void            loadpml4(pagetablee_t*);
 uint64          walkaddr(pagetablee_t*, uint64);
 int             copyout(pagetablee_t*, uint64, char*, uint64);

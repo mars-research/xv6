@@ -186,8 +186,11 @@ loadgdt:
 loadgdt32:
   ret
 
+.code32
 .globl apstart
 apstart:
+# set a stack for loadgdt to use
+  mov $0x6000, %esp
   call  loadgdt
 
 # setup paging
@@ -201,11 +204,12 @@ apstart64:
 # load VA of stack
   movq $0x7000-12, %rax
   movq (%rax), %rsp
+
 # clear frame pointer for stack walks
   xor   %rbp, %rbp
+
 # boot into C
   call  apmain
-
 
 # data section
 .section .bss

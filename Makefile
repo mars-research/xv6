@@ -69,21 +69,25 @@ LDFLAGS = -z max-page-size=4096
 
 $K/kernel: $(OBJS) $K/kernel.ld $K/arch/$(ARCH)/entryother# $U/initcode
 	$(LD) $(LDFLAGS) -T $K/arch/$(ARCH)/kernel.ld -o $K/kernel $(OBJS) -b binary entryother
+	$(OBJDUMP) -S $K/kernel > $K/kernel.asm
+	$(OBJDUMP) -t $K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $K/kernel.sym
 
 $K/arch/$(ARCH)/entryother: $K/arch/$(ARCH)/entryother.S
 	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c $K/arch/$(ARCH)/entryother.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7000 -o bootblockother.o entryother.o
 	$(OBJCOPY) -S -O binary -j .text bootblockother.o entryother
 	$(OBJDUMP) -S bootblockother.o > entryother.asm
+
  
 $K/arch/$(ARCH)/vectors.S: $K/arch/$(ARCH)/vectors.pl
 	./$K/arch/$(ARCH)/vectors.pl > $K/arch/$(ARCH)/vectors.S
 
-$U/arch/$(ARCH)/initcode: $U/arch/$(ARCH)/initcode.S
+initcode: $U/arch/$(ARCH)/initcode.S
 	$(CC) $(CFLAGS) -nostdinc -I. -Ikernel -c $U/arch/$(ARCH)/initcode.S -o $U/arch/$(ARCH)/initcode.o
 	$(LD) $(LDFLAGS) -N -e start -Ttext $(ULINK) -o $U/arch/$(ARCH)/initcode.out $U/arch/$(ARCH)/initcode.o
-	$(OBJCOPY) -S -O binary $U/arch/$(ARCH)/initcode.out $U/arch/$(ARCH)/initcode
+	$(OBJCOPY) -S -O binary $U/arch/$(ARCH)/initcode.out initcode
 	$(OBJDUMP) -S $U/arch/$(ARCH)/initcode.o > $U/arch/$(ARCH)/initcode.asm
+
 
 tags: $(OBJS) _init
 	etags *.S *.c
@@ -188,7 +192,7 @@ QEMUOPTS += -no-shutdown -no-reboot
 qemu: xv6.img fs.img
 	$(QEMU) $(QEMUOPTS)
 
-.gdbinit: .gdbinit.tmpl-riscv
+.gdbinit: .gdbinit
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
 qemu-gdb: xv6.img .gdbinit fs.img

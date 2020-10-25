@@ -3,8 +3,8 @@
 #include "../../memlayout.h"
 
 .code16           
-.globl entryother
-entryother:
+.globl start
+start:
     cli                         # BIOS enabled interrupts; disable
 
 # Zero data segment registers DS, ES, and SS.
@@ -20,15 +20,15 @@ entryother:
     movl    %cr0, %eax
     orl     $CR0_PE, %eax
     movl    %eax, %cr0
-
-
+    
+//PAGEBREAK!
 # Complete transition to 32-bit protected mode by using long jmp
 # to reload %cs and %eip.  The segment descriptors are set up with no
 # translation, so that the mapping is still the identity mapping.
-    ljmp    $(SEG_KCODE<<3), $entryother32
+    ljmp    $(SEG_KCODE<<3), $start32
 
 .code32  # Tell assembler to generate 32-bit code now.
-entryother32:
+start32:
 # Set up the protected-mode data segment registers
     movw    $(SEG_KDATA<<3), %ax    # Our data segment selector
     movw    %ax, %ds                # -> DS: Data Segment
@@ -38,8 +38,9 @@ entryother32:
     movw    %ax, %fs                # -> FS
     movw    %ax, %gs                # -> GS
 
-    movl $0x7000-4, %ecx
-    jmp *%ecx
+    mov $0x7000-4, %ecx
+    mov (%ecx), %ecx
+    jmp  %ecx
     
     jmp   .
 

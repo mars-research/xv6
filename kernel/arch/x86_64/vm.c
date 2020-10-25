@@ -224,6 +224,13 @@ kpaginginit()
   loadpml4(bootstrap_pml4);
 }
 
+// Switch h/w page table register to the kernel-only page table,
+// for when no process is running.
+void
+switchkvm(void)
+{
+  loadpml4(bootstrap_pml4);   // switch to the kernel page table
+}
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
 void
