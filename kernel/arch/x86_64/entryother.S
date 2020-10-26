@@ -38,10 +38,12 @@ start32:
     movw    %ax, %fs                # -> FS
     movw    %ax, %gs                # -> GS
 
+#Jump to apstart
     mov $0x7000-4, %ecx
     mov (%ecx), %ecx
     jmp  %ecx
-    
+
+#Should not return    
     jmp   .
 
 

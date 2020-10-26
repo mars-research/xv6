@@ -190,7 +190,7 @@ loadgdt32:
 .globl apstart
 apstart:
 # set a stack for loadgdt to use
-  mov $0x6000, %esp
+  mov $0x6fe0, %esp
   call  loadgdt
 
 # setup paging

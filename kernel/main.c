@@ -39,7 +39,6 @@ apmain(void)
   switchkvm();
   seginit();
   lapicinit();
-  printf("cpu%d: starting %d\n", cpuid(), cpuid());
   idtinit();
   xchg(&(mycpu()->started), 1); // tell startothers() we're up
   printf("cpu%d: starting %d\n", cpuid(), cpuid());
@@ -67,15 +66,13 @@ static void startothers(void)
     
     //start aps and set up 1 page of stack for them
     stack = kalloc();
-    *(uint64*)(0x7000-12) = (uint64) (stack);
+    *(uint64*)(0x7000-12) = ((uint64) (stack) + 4096);
     lapicstartap(c->apicid, (uint64)0x7000);
 
     // wait for cpu to finish mpmain()
-    while(c->started == 0){
-      printf("-");
+    while(c->started == 0){;
     }
 
   }
 
-  printf("out of startother loop");
 }

@@ -177,7 +177,7 @@ clean:
 #	then echo "-gdb tcp::$(GDBPORT)"; \
 #	else echo "-s -p $(GDBPORT)"; fi)
 ifndef CPUS
-CPUS := 2
+CPUS := 5
 endif
 
 QEMUGDB = -S -s
