@@ -73,10 +73,10 @@ $K/kernel: $(OBJS) $K/kernel.ld $K/arch/$(ARCH)/entryother# $U/initcode
 	$(OBJDUMP) -t $K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $K/kernel.sym
 
 $K/arch/$(ARCH)/entryother: $K/arch/$(ARCH)/entryother.S
-	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c $K/arch/$(ARCH)/entryother.S
-	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7000 -o bootblockother.o entryother.o
-	$(OBJCOPY) -S -O binary -j .text bootblockother.o entryother
-	$(OBJDUMP) -S bootblockother.o > entryother.asm
+	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c $K/arch/$(ARCH)/entryother.S  -o $K/arch/$(ARCH)/entryother.o
+	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7000 -o $K/arch/$(ARCH)/bootblockother.o $K/arch/$(ARCH)/entryother.o 
+	$(OBJCOPY) -S -O binary -j .text $K/arch/$(ARCH)/bootblockother.o entryother
+	$(OBJDUMP) -S $K/arch/$(ARCH)/bootblockother.o > $K/arch/$(ARCH)/entryother.asm
 
  
 $K/arch/$(ARCH)/vectors.S: $K/arch/$(ARCH)/vectors.pl
@@ -162,6 +162,7 @@ clean:
 	*/*.o */*.d */*.asm */*.sym \
 	$U/arch/$(ARCH)/initcode $U/arch/$(ARCH)/initcode.out $K/kernel fs.img \
 	$U/arch/$(ARCH)/initcode.asm \
+	$K/arch/$(ARCH)/entryother.asm $K/arch/$(ARCH)/entryother.o $K/arch/$(ARCH)/entryother.d $K/arch/$(ARCH)/entryother $K/arch/$(ARCH)/bootblockother.o entryother\
 	mkfs/mkfs \
         $U/usys.S \
 	$(UPROGS) \
