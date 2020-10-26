@@ -1,6 +1,8 @@
 #include "types.h"
 #include "defs.h"
 #include "kernel/arch/x86_64/x86_64.h"
+//To Do Remove #include "kernel/arch/x86_64/x86_64.h" @Xiangdong
+
 volatile static int started = 0;
 
 static void startothers(void);
