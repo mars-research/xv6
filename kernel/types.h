@@ -21,7 +21,7 @@ typedef uintptr_t uintp;
 typedef 
 #if defined(__x86_64__)
 	uint64 
-#elif defined(riscv)
+#elif defined(__riscv)
 	uint64 
 #endif
 	pagetable_t;
