@@ -1,6 +1,7 @@
-#include "types.h"
+#include "../../types.h"
+#include "../../defs.h"
 #include "defs.h"
-#include "kernel/arch/x86_64/x86_64.h"
+#include "x86_64.h"
 //To Do Remove #include "kernel/arch/x86_64/x86_64.h" @Xiangdong
 
 volatile static int started = 0;
@@ -43,7 +44,7 @@ apmain(void)
   lapicinit();
   idtinit();
   xchg(&(mycpu()->started), 1); // tell startothers() we're up
-  printf("cpu%d: starting %d\n", cpuid(), cpuid());
+  printf("AP%d: starting %d\n", cpuid(), cpuid());
   scheduler();     // start running processes
 }
 
@@ -56,7 +57,7 @@ static void startothers(void)
   memmove((void*)0x7000, _binary_entryother_start, (uint64)_binary_entryother_size); //load entryother binary to 0x7000
 
   for(c = cpus; c < cpus+ncpu; c++){
-    printf("cpu%d: starting AP %d\n", cpuid(), c->apicid);
+    printf("booting cpu%d: starting AP %d\n", cpuid(), c->apicid);
     if(c == mycpu())  // We've started already.
       continue;
 

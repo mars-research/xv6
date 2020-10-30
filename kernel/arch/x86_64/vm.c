@@ -449,7 +449,7 @@ uvmalloc(pml4e_t *pml4, uint64 oldsz, uint64 newsz)
 // mark a PTE invalid for user access.
 // used by exec for the user stack guard page.
 void
-uvmclear(pagetablee_t *pagetable, uint64 sz)
+uvmclear(pagetable_t *pagetable, uint64 sz)
 {
   pte_t *pte;
 

@@ -5,13 +5,6 @@
 #include "param.h"
 #include "spinlock.h"
 
-typedef 
-#if defined(x86_64)
-	uint64 
-#elif defined(riscv)
-	uint64 
-#endif
-	pagetable_t;
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 

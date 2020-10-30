@@ -7,7 +7,7 @@ OBJS = \
   $K/printf.o \
   $K/string.o \
   $K/console.o \
-  $K/main.o \
+  $K/arch/$(ARCH)/main.o \
   $K/kalloc.o \
   $K/bio.o \
   $K/log.o \
@@ -178,7 +178,7 @@ clean:
 #	then echo "-gdb tcp::$(GDBPORT)"; \
 #	else echo "-s -p $(GDBPORT)"; fi)
 ifndef CPUS
-CPUS := 5
+CPUS := 2
 endif
 
 QEMUGDB = -S -s

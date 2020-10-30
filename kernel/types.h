@@ -17,4 +17,12 @@ typedef uint32_t uint32;
 typedef uint64_t uint64;
 
 typedef uintptr_t uintp;
+
+typedef 
+#if defined(x86_64)
+	uint64 
+#elif defined(riscv)
+	uint64 
+#endif
+	pagetable_t;
 #endif // __XV6_TYPES_H_

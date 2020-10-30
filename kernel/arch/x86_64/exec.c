@@ -8,7 +8,7 @@
 #include "../../elf.h"
 
 pte_t* walk(pml4e_t *pagetable, uint64 va, int alloc); 
-static int loadseg(pagetablee_t *pagetable, uint64 va, struct inode *ip, uint offset, uint sz);
+static int loadseg(pagetable_t *pagetable, uint64 va, struct inode *ip, uint offset, uint sz);
 
 int
 exec(char *path, char **argv)
@@ -19,7 +19,7 @@ exec(char *path, char **argv)
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
-  pagetablee_t *pagetable = 0, *oldpagetable;
+  pagetable_t *pagetable = 0, *oldpagetable;
   struct proc *p;
 
   begin_op();
@@ -142,7 +142,7 @@ exec(char *path, char **argv)
 // and the pages from va to va+sz must already be mapped.
 // Returns 0 on success, -1 on failure.
 static int
-loadseg(pagetablee_t *pagetable, uint64 va, struct inode *ip, uint offset, uint sz)
+loadseg(pagetable_t *pagetable, uint64 va, struct inode *ip, uint offset, uint sz)
 {
   uint i, n;
   uint64 pa;
