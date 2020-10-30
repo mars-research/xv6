@@ -19,7 +19,7 @@ typedef uint64_t uint64;
 typedef uintptr_t uintp;
 
 typedef 
-#if defined(x86_64)
+#if defined(__x86_64__)
 	uint64 
 #elif defined(riscv)
 	uint64 
