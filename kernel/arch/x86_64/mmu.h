@@ -100,8 +100,6 @@
 #define NPTENTRIES      512     // # PTEs per page table
 
 #define PGSHIFT         12      // log2(PGSIZE)
-#define PTXSHIFT        12      // offset of PTX in a linear address
-#define PDXSHIFT        21      // offset of PDX in a linear address
 #define PX(level, va)   (((uint64)(va)>>(9*(level-1) + 12)) & PXMASK)
 
 #define PXMASK          0x1FF
@@ -172,23 +170,14 @@ struct segdesc {
 #define SEG_INTR64 (14<<0)     /* 64-bit interrupt gate */
 #define SEG_TRAP64 (15<<0)     /* 64-bit trap gate */
 
-// TODO: update this to 4-level paging scheme
 // A virtual address 'la' has a three-part structure as follows:
 //
-// +--------10------+-------10-------+---------12----------+
-// | Page Directory |   Page Table   | Offset within Page  |
-// |      Index     |      Index     |                     |
-// +----------------+----------------+---------------------+
+// +--------9-------+-------9--------+--------9-------+--------9-------+---------12----------+
+// | Page Directory |   Page Table   |   Page Table   |   Page Table   | Offset within Page  |
+// | Index(Level 4) |  Index(Level 3)|  Index(Level 2)|  Index(Level 1)|                     |
+// +----------------+----------------+-------------------------------------------------------+
 //  \--- PDX(va) --/ \--- PTX(va) --/ 
 
-// page directory index
-#define PDX(va)         (((uintp)(va) >> PDXSHIFT) & PXMASK)
-
-// page table index
-#define PTX(va)         (((uintp)(va) >> PTXSHIFT) & PXMASK)
-
-// construct virtual address from indexes and offset
-#define PGADDR(d, t, o) ((uintp)((d) << PDXSHIFT | (t) << PTXSHIFT | (o)))
 
 // Inter-convert paging structure entry and physical addr.
 #define PA2PSE(pa)  ((uint64)(pa) & 0x000FFFFFFFFFF000)
