@@ -1,6 +1,5 @@
 // Definitions of platform independent APIs
 // (implementation could be platform dependent.)
-// TODO: some platform dependent defs creeped in. remove them.
 
 // forward declarations
 struct spinlock;

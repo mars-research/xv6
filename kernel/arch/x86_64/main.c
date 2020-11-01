@@ -2,13 +2,11 @@
 #include "../../defs.h"
 #include "defs.h"
 #include "x86_64.h"
-//To Do Remove #include "kernel/arch/x86_64/x86_64.h" @Xiangdong
 
 volatile static int started = 0;
 
 static void startothers(void);
 // start() jumps here in supervisor mode on all CPUs.
-// TODO: remove all references to x86-specific functions here
 void
 main()
 {
