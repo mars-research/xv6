@@ -60,8 +60,8 @@ static void startothers(void)
       continue;
 
     //set a pgentry mapping 0-2MB vm to 0-2MB physcial memory for ap booting
-    *(uint64*) 0x4000 = (uint64)0xe3;
-    *(uint64*) 0x2000 = (uint64)0x4023;
+    *(uint64*) 0x4000 = (uint64)0x83;
+    *(uint64*) 0x2000 = (uint64)0x4003;
 
     *(uint32*)(0x7000-4) = (uint32)((uint64)apstart & 0xffffffff); // store the address of apstart so aps can jmp to it.
     

@@ -80,16 +80,12 @@ start64:
 
 .code32
 # Page tables.  See section 4.5 of 253668.pdf.
-# We map the first GB of physical memory at 0 and at 1 TB (not GB) before
-# the end of virtual memory.  At boot time we are using the mapping at 0
-# but during ordinary execution we use the high mapping.
-# The intent is that after bootstrap the kernel can expand this mapping
-# to cover all the available physical memory.
-# This would be easier if we could use the PS bit to create GB-sized entries
-# and skip the pdt table, but not all chips support it, and QEMU doesn't.
+# We map the 2 - 2 GiB + 128 MiB of physical memory at 2 - 2 GiB + 128 MiB (identity mapping)
+# With both PSE_PS and CR4_PAE set to 1, we are able to use 3 level paging with each page being 2MiB.
+# With PSE_PS set to 0, the CPU switches back to 4kb pages as default. 
 
 initpagetables:
-# We need to setup 4-level page tables
+# We need to setup 3-level page tables
 # with 2 MiB pages as follows:
 # Base addr:   Table
 # 0x1000: PML4
