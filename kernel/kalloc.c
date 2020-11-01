@@ -27,7 +27,6 @@ kinit()
   freerange(end, (void*)PHYSTOP);
 }
 
-// TODO: should this be static?
 void
 freerange(void *pa_start, void *pa_end)
 {
