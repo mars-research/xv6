@@ -38,9 +38,15 @@
 //   TRAMPOLINE (the same page as in the kernel)
 #define TRAPFRAME (TRAMPOLINE - PGSIZE)
 
-// TODO: Move definitions to a different file
-#define PGSIZE 4096 // bytes per page
-#define PGSHIFT 12  // bits of offset within a page
+// TODO: Don't know if this is ok
+#if defined(__x86_64__)
+	#define PGSIZE 4096 // bytes per page
+    #define PGSHIFT 12  // bits of offset within a page
+#elif defined(__riscv)
+	#define PGSIZE 4096 // bytes per page
+    #define PGSHIFT 12  // bits of offset within a page 
+#endif
+
 
 #define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1))
 #define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))
