@@ -65,7 +65,7 @@ static void startothers(void)
     
     //start aps and set up 1 page of stack for them
     stack = kalloc();
-    *(uint64*)(code-12) = ((uint64)(stack) + PGSIZE);
+    *(uint64*)(code-12) = ((uint64)(stack) + 4096);
     lapicstartap(c->apicid, (uint64)code);
 
     // wait for cpu to finish mpmain()
