@@ -1,6 +1,6 @@
 K=kernel
 U=user
-ULINK=0x100000 # 1 MB
+ULINK=0x40000000 # 1024 MB
 ARCH=x86_64
 
 OBJS = \
@@ -67,8 +67,8 @@ endif
 
 LDFLAGS = -z max-page-size=4096
 
-$K/kernel: $(OBJS) $K/kernel.ld $K/arch/$(ARCH)/entryother# $U/initcode
-	$(LD) $(LDFLAGS) -T $K/arch/$(ARCH)/kernel.ld -o $K/kernel $(OBJS) -b binary entryother
+$K/kernel: $(OBJS) $K/kernel.ld $K/arch/$(ARCH)/entryother initcode# $U/initcode
+	$(LD) $(LDFLAGS) -T $K/arch/$(ARCH)/kernel.ld -o $K/kernel $(OBJS) -b binary entryother initcode
 	$(OBJDUMP) -S $K/kernel > $K/kernel.asm
 	$(OBJDUMP) -t $K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $K/kernel.sym
 
@@ -183,7 +183,7 @@ endif
 
 QEMUGDB = -S -s
 QEMUEXTRA = -drive file=fs1.img,if=none,format=raw,id=x1 -device virtio-blk-device,drive=x1,bus=virtio-mmio-bus.1
-QEMUOPTS = -drive file=xv6.img,format=raw -m 3G -smp $(CPUS) -nographic
+QEMUOPTS = -drive file=xv6.img,format=raw -m 128M -smp $(CPUS) -nographic
 QEMUOPTS += -drive file=fs.img,index=1,media=disk,format=raw
 QEMUOPTS += -no-shutdown -no-reboot
 # QEMUOPTS += -d int

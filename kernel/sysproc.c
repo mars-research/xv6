@@ -8,7 +8,7 @@
 
 
 #if defined(__x86_64__)
-	#define SZ2UVA(x) (0x100000 + x)
+	#define SZ2UVA(x) (0x40000000L + x)
 #elif defined(__riscv)
 
 #endif

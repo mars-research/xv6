@@ -6,8 +6,8 @@
 # exec(init, argv)
 .globl start
 start:
-  mov $init,      %rdi
-  mov $argv,      %rsi
+  movabs $init,      %rdi
+  movabs $argv,      %rsi
   mov $SYS_exec,  %rax
   syscall
 

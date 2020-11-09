@@ -90,13 +90,12 @@ initpagetables:
 # Base addr:   Table
 # 0x1000: PML4
 # 0x2000: PDPT
-# 0x3000: PD   -> 2 - 2 GiB + 128 MiB (64 entries)
-# 0x4000: PD_AP -> 0 - 0 GiB + 128 MiB (1 entry) for AP 
+# 0x3000: PD_AP -> 0 - 0 GiB + 1 GiB (512 entry) for AP 
+
 
 #define PML4  0x1000
 #define PDPT  0x2000
-#define PD    0x3000
-#define PD_AP 0X4000
+#define PD_AP 0x3000
 
 # reset 0x1000 - 0x5000 to 0
   xor   %eax,   %eax
@@ -104,19 +103,6 @@ initpagetables:
   shr   $2,     %ecx                # 4 bytes written at a time
   mov   $PML4,  %edi
   rep   stosl
-
-# Setup PD
-  mov   $PD,    %ebx
-  xor   %ecx,   %ecx                 # counter
-  mov   $(2<<20),   %edx             # 2 MiB; to calculate page base addrs
-  mov   $KERNBASE,  %eax
-  or    $(PSE_P|PSE_W|PSE_PS),  %eax
-PDE_loop:
-  mov   %eax,   (%ebx, %ecx, 8)      # PD[ECX] = EAX
-  add   %edx,   %eax                 # create next PD entry
-  inc   %ecx
-  cmp   $64,    %ecx                 # 64 entries to map 128 MiB
-  jnz   PDE_loop
 
 # Setup PD_AP
   mov   $PD_AP,    %ebx
@@ -128,16 +114,12 @@ PD_AP_loop:
   mov   %eax,   (%ebx, %ecx, 8)      # PD_AP[ECX] = EAX
   add   %edx,   %eax                 # create next PD_AP entry
   inc   %ecx
-  cmp   $64,    %ecx                 # 64 entries to map 128 MiB
+  cmp   $0x800,    %ecx                 # 512 entries to map 1024 MiB
   jnz   PD_AP_loop
 
 # Setup PDPT
   mov   $PDPT,  %ebx
-  mov   $PD,   %eax
-  or    $(PSE_P|PSE_W), %eax
-# PDPT[2] -> PD -- 2 GiB - 3 GiB entry
-  mov   $2,   %edi
-  mov   %eax,   (%ebx, %edi, 8)      # PDPT[0] = ADDR(PD)
+
 # PDPT[0] -> PD_AP -- 0 GiB - 1 GiB entry
   mov   $PD_AP, %eax
   or    $(PSE_P|PSE_W), %eax

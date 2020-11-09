@@ -4,15 +4,17 @@
 // Physical memory layout
 
 // the kernel uses physical memory thus:
-// 80000000 -- entry.S, then kernel text and data
+// 100000 -- entry.S, then kernel text and data
 // end -- start of kernel page allocation area
 // PHYSTOP -- end RAM used by the kernel
 
 // the kernel expects there to be RAM
 // for use by the kernel and user pages
-// from physical address 0x80000000 to PHYSTOP.
-#define KERNBASE 0x80000000L
-#define PHYSTOP (KERNBASE + 128*1024*1024)
+// from physical address 0x100000 to PHYSTOP.
+// between 0 and 1 MB have special meaning in Intel's architecture,
+// we expect the there to be at least 128 MiB
+#define KERNBASE 0x100000L
+#define PHYSTOP (KERNBASE + 127*1024*1024)
 
 // map the trampoline page to the highest address,
 // in both user and kernel space.

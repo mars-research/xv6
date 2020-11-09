@@ -183,10 +183,9 @@ struct segdesc {
 #define PA2PSE(pa)  ((uint64)(pa) & 0x000FFFFFFFFFF000)
 #define PSE2PA(pse) ((((uint64)(pse)<<16)>>16) & ~0xFFF) // zero out top 16 bits
 
-// Since xv6 uses a 1:1 mapping approach and many address spaces
-// between 0 and 1 MB have special meaning in Intel's architecture,
-// all user programs are linked starting at 1 MB
-#define USERBASE (1<<20)
+// Since xv6 uses a 1:1 mapping approach and many address spaces for kernel
+// all user programs are linked starting at 1024 MB
+#define USERBASE      0x40000000L
 #define SZ2UVA(sz)   (sz+USERBASE)
 #define UVA2SZ(sz)   (sz-USERBASE)
 

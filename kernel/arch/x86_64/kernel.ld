@@ -3,7 +3,7 @@ OUTPUT_FORMAT("elf64-x86-64", "elf64-x86-64", "elf64-x86-64")
 /* OUTPUT_ARCH(x86_64) */
 ENTRY(_start)
 
-kernelbase = 0x80000000; /* 2GiB */
+kernelbase = 0x100000; /* 1MiB */
 multiboot_load = kernelbase;
 
 SECTIONS {
