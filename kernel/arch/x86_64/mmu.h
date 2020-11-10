@@ -185,7 +185,7 @@ struct segdesc {
 
 // Since xv6 uses a 1:1 mapping approach and many address spaces for kernel
 // all user programs are linked starting at 1024 MB
-#define USERBASE      0x40000000L
+#define USERBASE      0x80000000L
 #define SZ2UVA(sz)   (sz+USERBASE)
 #define UVA2SZ(sz)   (sz-USERBASE)
 

@@ -8,7 +8,7 @@
 
 
 #if defined(__x86_64__)
-	#define SZ2UVA(x) (0x40000000L + x)
+	#define SZ2UVA(x) (0x80000000L + x)
 #elif defined(__riscv)
 
 #endif
@@ -47,7 +47,7 @@ sys_wait(void)
 uint64
 sys_sbrk(void)
 {
-  int addr;
+  uint64 addr;
   int n;
 
   if(argint(0, &n) < 0)
