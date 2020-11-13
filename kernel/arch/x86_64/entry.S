@@ -84,6 +84,7 @@ start64:
 # With both PSE_PS and CR4_PAE set to 1, we are able to use 3 level paging with each page being 2MiB.
 # With PSE_PS set to 0, the CPU switches back to 4kb pages as default. 
 
+#TODO: Put the pagetables into the binary of kernel @xiangdong
 initpagetables:
 # We need to setup 3-level page tables
 # with 2 MiB pages as follows:
