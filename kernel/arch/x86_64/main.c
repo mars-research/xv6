@@ -75,3 +75,12 @@ static void startothers(void)
   }
 
 }
+
+__attribute__((__aligned__(PGSIZE)))
+pdpte_t PML4[NPDENTRIES];
+
+__attribute__((__aligned__(PGSIZE)))
+pde_t   PDPT[NPDENTRIES];
+
+__attribute__((__aligned__(PGSIZE)))
+pte_t   PD_AP[NPDENTRIES];

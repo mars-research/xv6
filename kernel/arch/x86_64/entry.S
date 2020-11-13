@@ -80,29 +80,37 @@ start64:
 
 .code32
 # Page tables.  See section 4.5 of 253668.pdf.
-# We map the 2 - 2 GiB + 128 MiB of physical memory at 2 - 2 GiB + 128 MiB (identity mapping)
+# We map the 0 - 0 GiB + 1024 MiB of physical memory at 0 - 0 GiB + 1024 MiB (identity mapping)
 # With both PSE_PS and CR4_PAE set to 1, we are able to use 3 level paging with each page being 2MiB.
 # With PSE_PS set to 0, the CPU switches back to 4kb pages as default. 
 
-#TODO: Put the pagetables into the binary of kernel @xiangdong
 initpagetables:
 # We need to setup 3-level page tables
 # with 2 MiB pages as follows:
 # Base addr:   Table
-# 0x1000: PML4
-# 0x2000: PDPT
-# 0x3000: PD_AP -> 0 - 0 GiB + 1 GiB (512 entry) for AP 
+# PML4
+# PDPT
+# PD_AP -> 0 - 0 GiB + 1 GiB (512 entry) 
 
-
-#define PML4  0x1000
-#define PDPT  0x2000
-#define PD_AP 0x3000
-
-# reset 0x1000 - 0x5000 to 0
+# reset PML4 to 0
   xor   %eax,   %eax
-  mov   $(PD_AP + PGSIZE - PML4), %ecx # number of bytes to zero out
+  mov   $PGSIZE, %ecx # number of bytes to zero out
   shr   $2,     %ecx                # 4 bytes written at a time
   mov   $PML4,  %edi
+  rep   stosl
+
+# reset PDPT to 0
+  xor   %eax,   %eax
+  mov   $PGSIZE, %ecx # number of bytes to zero out
+  shr   $2,     %ecx                # 4 bytes written at a time
+  mov   $PDPT,  %edi
+  rep   stosl
+
+# reset PD_AP to 0
+  xor   %eax,   %eax
+  mov   $PGSIZE, %ecx # number of bytes to zero out
+  shr   $2,     %ecx                # 4 bytes written at a time
+  mov   $PD_AP,  %edi
   rep   stosl
 
 # Setup PD_AP
