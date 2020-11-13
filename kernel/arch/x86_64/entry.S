@@ -123,7 +123,7 @@ PD_AP_loop:
   mov   %eax,   (%ebx, %ecx, 8)      # PD_AP[ECX] = EAX
   add   %edx,   %eax                 # create next PD_AP entry
   inc   %ecx
-  cmp   $0x200,    %ecx                 # 512 entries to map 1024 MiB
+  cmp   $NPDENTRIES,    %ecx                 # 512 entries to map 1024 MiB
   jnz   PD_AP_loop
 
 # Setup PDPT
