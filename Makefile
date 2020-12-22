@@ -1,6 +1,6 @@
 K=kernel
 U=user
-ULINK=0x0000000080000000 # 1024 MB
+ULINK=0x80000000 # 2 GiB
 ARCH=x86_64
 
 OBJS = \
@@ -183,7 +183,7 @@ endif
 
 QEMUGDB = -S -s
 QEMUEXTRA = -drive file=fs1.img,if=none,format=raw,id=x1 -device virtio-blk-device,drive=x1,bus=virtio-mmio-bus.1
-QEMUOPTS = -drive file=xv6.img,format=raw -m 128M -smp $(CPUS) -nographic
+QEMUOPTS = -drive file=xv6.img,format=raw -m 128M -smp $(CPUS) 
 QEMUOPTS += -drive file=fs.img,index=1,media=disk,format=raw
 QEMUOPTS += -no-shutdown -no-reboot
 # QEMUOPTS += -d int
@@ -192,6 +192,9 @@ QEMUOPTS += -no-shutdown -no-reboot
 
 qemu: xv6.img fs.img
 	$(QEMU) $(QEMUOPTS)
+
+qemu-nox: xv6.img fs.img
+	$(QEMU) $(QEMUOPTS) -nographic
 
 .gdbinit: .gdbinit
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
@@ -243,3 +246,29 @@ tar:
 	(cd /tmp; tar cf - xv6) | gzip >xv6-rev10.tar.gz  # the next one will be 10 (9/17)
 
 .PHONY: dist-test dist
+
+# kernelmemfs is a copy of kernel that maintains the
+# disk image in memory instead of writing to a disk.
+# This is not so useful for testing persistent storage or
+# exploring disk buffering implementations, but it is
+# great for testing the kernel on real hardware without
+# needing a scratch disk.
+MEMFSOBJS = $(filter-out $K/arch/$(ARCH)/ide.o,$(OBJS)) $K/arch/$(ARCH)/memide.o
+kernelmemfs: $(MEMFSOBJS) $K/arch/$(ARCH)/entryother initcode $K/arch/$(ARCH)/kernel.ld fs.img
+	$(LD) $(LDFLAGS) -T $K/arch/$(ARCH)/kernel.ld -o kernelmemfs $(MEMFSOBJS) -b binary initcode entryother fs.img
+	$(OBJDUMP) -S kernelmemfs > kernelmemfs.asm
+	$(OBJDUMP) -t kernelmemfs | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > kernelmemfs.sym
+
+qemu-memfs: xv6memfs.img
+	$(QEMU) -drive file=xv6memfs.img,index=0,media=disk,format=raw -smp $(CPUS) -m 256
+
+qemu-memfs-nox: xv6memfs.img
+	$(QEMU) -drive file=xv6memfs.img,index=0,media=disk,format=raw -smp $(CPUS) -m 256 -nographic
+
+qemu-memfs-gdb: xv6memfs.img
+	$(QEMU) -drive file=xv6memfs.img,index=0,media=disk,format=raw -smp $(CPUS) -m 256 -S $(QEMUGDB)
+
+xv6memfs.img: kernelmemfs $K/bootblock
+	dd if=/dev/zero of=xv6memfs.img count=10000
+	dd if=$K/bootblock of=xv6memfs.img conv=notrunc
+	dd if=$< of=xv6memfs.img seek=1 conv=notrunc

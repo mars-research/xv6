@@ -176,7 +176,7 @@ struct segdesc {
 // | Page Directory |   Page Table   |   Page Table   |   Page Table   | Offset within Page  |
 // | Index(Level 4) |  Index(Level 3)|  Index(Level 2)|  Index(Level 1)|                     |
 // +----------------+----------------+-------------------------------------------------------+
-//  \--- PDX(va) --/ \--- PTX(va) --/ 
+// \----PMX(va)----/\----PDPX(va)----/\----PDX(va)----/\----PTX(va)----/
 
 
 // Inter-convert paging structure entry and physical addr.
@@ -184,7 +184,7 @@ struct segdesc {
 #define PSE2PA(pse) ((((uint64)(pse)<<16)>>16) & ~0xFFF) // zero out top 16 bits
 
 // Since xv6 uses a 1:1 mapping approach and many address spaces for kernel
-// all user programs are linked starting at 1024 MB
+// all user programs are linked starting at 2 GiB
 #define USERBASE      0x80000000L
 #define SZ2UVA(sz)   (sz+USERBASE)
 #define UVA2SZ(sz)   (sz-USERBASE)

@@ -5,14 +5,17 @@
 #include "mmu.h"
 #include "../../memlayout.h"
 
+# Multiboot header, for multiboot boot loaders like GNU Grub.
+# http://www.gnu.org/software/grub/manual/multiboot/multiboot.html
+
 # Multiboot2 header -- must be 64-bit aligned
+.code32
+.align 8
 .set MAGIC, 0xE85250D6
 .set ARCH,  0         /* 32-bit protected mode */
 .set HEADER_LEN, (header_end - multiboot_header)
 .set CHECKSUM, (0 - (MAGIC + ARCH + HEADER_LEN))
 
-.code32
-.align 8
 .section .multiboot_header
 .globl multiboot_header
 multiboot_header:
@@ -20,24 +23,28 @@ multiboot_header:
   .long ARCH
   .long HEADER_LEN
   .long CHECKSUM
-
 # Address tag
 addr_tag:
-  MBHEADER_TAG(2, 0, (entry_addr_tag - addr_tag))
+  .word 2                          /* type */
+  .word 0                          /* flags -- not optional */
+  .long (entry_addr_tag - addr_tag)/* size */
   .long multiboot_load             /* header_addr */
   .long multiboot_load             /* load_addr */
   .long multiboot_load_end         /* load_end_addr */
   .long multiboot_bss_end          /* bss_end_addr */
-
 # Entry address tag
+.align 8
 entry_addr_tag:
-  MBHEADER_TAG(3, 0, (termination_tag - entry_addr_tag))
+  .word 3                                 /* type */
+  .word 0                                 /* flags -- not optional */
+  .long (termination_tag - entry_addr_tag)/* size */
   .long multiboot_entry
-
 # Tag to indicate end of tags
+.align 8
 termination_tag:
-  MBHEADER_TAG(0, 0, (header_end - termination_tag))
-
+  .word 0                             /* type */
+  .word 0                             /* flags -- not optional */
+  .long (header_end - termination_tag)/* size = 8 */
 header_end:
 
 .section .text

@@ -24,6 +24,7 @@ main()
   printf("\n");
   printf("xv6 is booting\n");
   printf("\n");
+  printf("%d CPUS are available \n",ncpu);
   binit();
   iinit();
   fileinit();
@@ -36,13 +37,13 @@ main()
 // Other CPUs jump here from apstart.
 void
 apmain(void)
-{
+{    
   switchkvm();
   seginit();
   lapicinit();
   idtinit();
   xchg(&(mycpu()->started), 1); // tell startothers() we're up
-  printf("AP%d: starting %d\n", cpuid(), cpuid());
+  printf("AP NO.%d is up\n",cpuid());
   scheduler();     // start running processes
 }
 
@@ -57,10 +58,10 @@ static void startothers(void)
   memmove(code, _binary_entryother_start, (uint64)_binary_entryother_size); //load entryother binary to 0x7000
 
   for(c = cpus; c < cpus+ncpu; c++){
-    printf("booting cpu%d: starting AP %d\n", cpuid(), c->apicid);
     if(c == mycpu())  // We've started already.
       continue;
 
+    printf("Main CPU starting AP %d\n", c->apicid);
     *(uint32*)(code-4) = (uint64)apstart; // store the address of apstart so aps can jmp to it.
     
     //start aps and set up 1 page of stack for them
