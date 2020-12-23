@@ -272,3 +272,9 @@ xv6memfs.img: kernelmemfs $K/bootblock
 	dd if=/dev/zero of=xv6memfs.img count=10000
 	dd if=$K/bootblock of=xv6memfs.img conv=notrunc
 	dd if=$< of=xv6memfs.img seek=1 conv=notrunc
+
+# XV6 only supports ide hard dirve, but recent machines only have SATA,so kernelmemfs uses memide.c to boot.
+# To boot on the real hardware, copy kernelmemfs into /boot/kernel and use grub to boot on a linux machine.
+# For more infos about how to use grub, please go section "Boot on baremetal from a Linux partition" in
+# https://mars-research.github.io/kernel%20development/2020/10/28/hello-world-on-bare-metal.html
+
