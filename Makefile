@@ -135,7 +135,7 @@ UPROGS=\
 	$U/_stressfs\
 	$U/_wc\
 	$U/_zombie\
-	#$U/_usertests\
+	#$U/_usertests-x86\
 	$U/_wc\
 	$U/_zombie\
 
