@@ -104,7 +104,7 @@ walkaddr(pml4e_t *pml4, uint64 va)
 // physical addresses starting at pa. va and size need not
 // be page-aligned. Returns 0 on success, -1 if walk() couldn't
 // allocate a needed page-table page.
-int
+static int
 mappages(pml4e_t *pml4, uint64 va, uint64 size, uint64 pa, uint64 perm)
 {
   uint64 a, last;

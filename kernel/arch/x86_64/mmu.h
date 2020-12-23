@@ -170,13 +170,13 @@ struct segdesc {
 #define SEG_INTR64 (14<<0)     /* 64-bit interrupt gate */
 #define SEG_TRAP64 (15<<0)     /* 64-bit trap gate */
 
-// A virtual address 'la' has a three-part structure as follows:
+// A virtual address 'la' has a six-part structure as follows:
 //
-// +--------9-------+-------9--------+--------9-------+--------9-------+---------12----------+
-// | Page Directory |   Page Table   |   Page Table   |   Page Table   | Offset within Page  |
-// | Index(Level 4) |  Index(Level 3)|  Index(Level 2)|  Index(Level 1)|                     |
-// +----------------+----------------+-------------------------------------------------------+
-// \----PMX(va)----/\----PDPX(va)----/\----PDX(va)----/\----PTX(va)----/
+// +--16--+---9---+------9-------+-----9----+----9-------+----12-------+
+// | Sign | PML4  |Page Directory| Page Dir |Page Table  | Offset Page |
+// |Extend| Index | Pointer Index|  Index   |  Index     | in Page     |
+// +------+-------+--------------+----------+------------+-------------+
+//       \-PMX(va)-/\-PDPX(va)--/ \-PDX(va)-/ \-PTX(va)-/
 
 
 // Inter-convert paging structure entry and physical addr.
